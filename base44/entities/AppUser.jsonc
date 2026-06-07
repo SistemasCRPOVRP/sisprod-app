@@ -1,0 +1,102 @@
+{
+  "name": "AppUser",
+  "type": "object",
+  "properties": {
+    "nome_completo": {
+      "type": "string",
+      "description": "Nome completo do usu\u00e1rio"
+    },
+    "id_funcional": {
+      "type": "string",
+      "description": "Id. Funcional (login)"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-mail institucional"
+    },
+    "senha_hash": {
+      "type": "string",
+      "description": "Senha (armazenada em texto para uso interno)"
+    },
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "administrador",
+        "comandante_crpm",
+        "comandante_btl",
+        "comandante_cia",
+        "comandante_pel",
+        "comandante_gpm",
+        "operador",
+        "p1",
+        "p2",
+        "p3",
+        "p4"
+      ],
+      "default": "operador",
+      "description": "Perfil de acesso"
+    },
+    "abas_permitidas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Abas do menu liberadas individualmente pelo administrador (null = todas as padr\u00e3o do perfil)"
+    },
+    "bpm": {
+      "type": "string",
+      "description": "Batalh\u00e3o"
+    },
+    "companhia": {
+      "type": "string",
+      "description": "Companhia"
+    },
+    "pelotao": {
+      "type": "string",
+      "description": "Pelot\u00e3o"
+    },
+    "gpm": {
+      "type": "string",
+      "description": "GPM"
+    },
+    "municipio": {
+      "type": "string",
+      "description": "Munic\u00edpio"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "ID composto da unidade"
+    },
+    "organization_name": {
+      "type": "string",
+      "description": "Nome da unidade"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "funcao": {
+      "type": "string",
+      "description": "Fun\u00e7\u00e3o exercida"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone para contato"
+    }
+  },
+  "required": [
+    "nome_completo",
+    "id_funcional",
+    "perfil"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
+  }
+}

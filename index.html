@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Sem manifest PWA para evitar cache agressivo em dispositivos -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>SISPROD BM - Produtividade Operacional</title>
+    <script>
+      (function () {
+        var w = window.innerWidth || screen.width;
+        var h = window.innerHeight || screen.height;
+        var ua = navigator.userAgent;
+
+        var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) ||
+          (w >= 768 && w <= 1366 && 'ontouchstart' in window);
+        var isMobile = !isTablet && ('ontouchstart' in window || /Mobi|Android|iPhone|iPod/i.test(ua));
+        var isPC = !isMobile && !isTablet;
+
+        var scale = 1.0;
+
+        if (isMobile) {
+          // Celular: viewport padrão, escala 1.0
+          scale = 1.0;
+        } else if (isTablet) {
+          // Tablet: escala ligeiramente menor para acomodar mais conteúdo
+          if (w >= 1024) scale = 1.0;
+          else if (w >= 768) scale = 0.95;
+          else scale = 0.9;
+        } else {
+          // PC/Desktop: escala normal
+          scale = 1.0;
+        }
+
+        // Aplica viewport dinâmico
+        var viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content',
+            'width=device-width, initial-scale=' + scale +
+            ', maximum-scale=' + scale +
+            ', minimum-scale=' + scale +
+            ', user-scalable=no'
+          );
+        }
+
+        // Adiciona classe no html para uso via CSS/JS
+        var html = document.documentElement;
+        html.classList.remove('device-mobile', 'device-tablet', 'device-pc');
+        if (isMobile) html.classList.add('device-mobile');
+        else if (isTablet) html.classList.add('device-tablet');
+        else html.classList.add('device-pc');
+
+        // Expõe tipo de dispositivo globalmente
+        window.__deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'pc';
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "planejamento",
+        "comandante",
+        "operador"
+      ],
+      "default": "operador"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "ID composto da unidade: bpm|cia|pel|gpm"
+    },
+    "organization_name": {
+      "type": "string",
+      "description": "Nome da unidade para exibi\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "id_funcional": {
+      "type": "string",
+      "description": "Id. Funcional do policial \u2014 usado como login"
+    },
+    "senha_inicial": {
+      "type": "string",
+      "description": "Senha inicial cadastrada pelo administrador"
+    }
+  },
+  "required": [
+    "organization_id",
+    "organization_name",
+    "id_funcional",
+    "senha_inicial"
+  ]
+}

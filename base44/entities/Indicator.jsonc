@@ -1,0 +1,44 @@
+{
+  "name": "Indicator",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do indicador"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "Preventiva",
+        "Repressiva",
+        "Apreens\u00e3o",
+        "Atendimento",
+        "Economia"
+      ],
+      "description": "Categoria do indicador"
+    },
+    "peso": {
+      "type": "number",
+      "description": "Peso unit\u00e1rio do indicador"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    }
+  },
+  "required": [
+    "nome",
+    "categoria",
+    "peso"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
+  }
+}

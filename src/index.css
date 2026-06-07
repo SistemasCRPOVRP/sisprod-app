@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --background: 140 10% 97%;
+    --foreground: 150 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 20% 10%;
+    --primary: 142 40% 28%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 140 8% 92%;
+    --secondary-foreground: 150 20% 15%;
+    --muted: 140 8% 94%;
+    --muted-foreground: 150 10% 45%;
+    --accent: 45 80% 50%;
+    --accent-foreground: 45 90% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 140 10% 88%;
+    --input: 140 10% 88%;
+    --ring: 142 40% 28%;
+    --chart-1: 142 40% 28%;
+    --chart-2: 45 80% 50%;
+    --chart-3: 200 60% 45%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 280 50% 50%;
+    --radius: 0.625rem;
+    --sidebar-background: 150 20% 12%;
+    --sidebar-foreground: 140 10% 90%;
+    --sidebar-primary: 45 80% 50%;
+    --sidebar-primary-foreground: 150 20% 10%;
+    --sidebar-accent: 150 15% 18%;
+    --sidebar-accent-foreground: 140 10% 90%;
+    --sidebar-border: 150 15% 20%;
+    --sidebar-ring: 45 80% 50%;
+  }
+
+  .dark {
+    --background: 150 15% 8%;
+    --foreground: 140 10% 95%;
+    --card: 150 15% 11%;
+    --card-foreground: 140 10% 95%;
+    --popover: 150 15% 11%;
+    --popover-foreground: 140 10% 95%;
+    --primary: 142 45% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 150 10% 16%;
+    --secondary-foreground: 140 10% 90%;
+    --muted: 150 10% 16%;
+    --muted-foreground: 140 8% 55%;
+    --accent: 45 80% 50%;
+    --accent-foreground: 45 90% 15%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 150 10% 18%;
+    --input: 150 10% 18%;
+    --ring: 142 45% 40%;
+    --chart-1: 142 45% 40%;
+    --chart-2: 45 80% 50%;
+    --chart-3: 200 60% 50%;
+    --chart-4: 0 65% 55%;
+    --chart-5: 280 50% 55%;
+    --sidebar-background: 150 20% 6%;
+    --sidebar-foreground: 140 10% 90%;
+    --sidebar-primary: 45 80% 50%;
+    --sidebar-primary-foreground: 150 20% 10%;
+    --sidebar-accent: 150 15% 12%;
+    --sidebar-accent-foreground: 140 10% 90%;
+    --sidebar-border: 150 15% 14%;
+    --sidebar-ring: 45 80% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+}
+
+/* ── Ajustes automáticos por tipo de dispositivo ── */
+
+/* Celular: tamanho de fonte base um pouco maior para legibilidade */
+html.device-mobile body {
+  font-size: 15px;
+}
+
+/* Tablet: fonte intermediária, layout otimizado */
+html.device-tablet body {
+  font-size: 15px;
+}
+
+/* PC/Desktop: tamanho padrão */
+html.device-pc body {
+  font-size: 14px;
+}
+
+/* Garante que inputs e selects não causem zoom no iOS ao receber foco */
+html.device-mobile input,
+html.device-mobile select,
+html.device-mobile textarea {
+  font-size: 16px !important;
+}
+
+/* Scroll suave em todos os dispositivos */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Previne overflow horizontal indesejado em mobile */
+html.device-mobile,
+html.device-tablet {
+  overflow-x: hidden;
+}
+html.device-mobile body,
+html.device-tablet body {
+  overflow-x: hidden;
+}

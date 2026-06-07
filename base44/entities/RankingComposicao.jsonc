@@ -1,0 +1,103 @@
+{
+  "name": "RankingComposicao",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do grupo/concorrente (ex: 'Grupo CIA Santa Cruz do Sul')"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o opcional"
+    },
+    "observacao": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es administrativas"
+    },
+    "tipo_nivel": {
+      "type": "string",
+      "enum": [
+        "companhia",
+        "pelotao",
+        "gpm"
+      ],
+      "description": "N\u00edvel de concorr\u00eancia desta composi\u00e7\u00e3o"
+    },
+    "municipios_vinculados": {
+      "type": "array",
+      "description": "Munic\u00edpios vinculados ao grupo \u2014 apenas produ\u00e7\u00f5es destes munic\u00edpios s\u00e3o contabilizadas",
+      "items": {
+        "type": "string"
+      }
+    },
+    "municipios_participantes": {
+      "type": "array",
+      "description": "Munic\u00edpios que participam deste grupo (OPMs configuradas)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "municipio": {
+            "type": "string"
+          },
+          "nome_sugerido": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "unidades_vinculadas": {
+      "type": "array",
+      "description": "Lista de GPMs vinculados a este grupo (gerado automaticamente a partir dos munic\u00edpios)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bpm": {
+            "type": "string"
+          },
+          "companhia": {
+            "type": "string"
+          },
+          "pelotao": {
+            "type": "string"
+          },
+          "gpm": {
+            "type": "string"
+          },
+          "municipio": {
+            "type": "string"
+          },
+          "nivel": {
+            "type": "string",
+            "enum": [
+              "companhia",
+              "pelotao",
+              "gpm"
+            ]
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "ordem": {
+      "type": "number",
+      "description": "Ordem de exibi\u00e7\u00e3o no ranking"
+    }
+  },
+  "required": [
+    "nome",
+    "tipo_nivel"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
+  }
+}

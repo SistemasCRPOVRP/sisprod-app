@@ -1,0 +1,64 @@
+{
+  "name": "Aviso",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo do aviso"
+    },
+    "mensagem": {
+      "type": "string",
+      "description": "Conte\u00fado do aviso"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "info",
+        "aviso",
+        "atualizacao",
+        "manutencao",
+        "atualizacao_sistema",
+        "urgente",
+        "outro"
+      ],
+      "default": "info",
+      "description": "Tipo/categoria do aviso"
+    },
+    "tipo_personalizado": {
+      "type": "string",
+      "description": "Tipo personalizado (quando tipo = 'outro')"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    },
+    "autor_nome": {
+      "type": "string",
+      "description": "Nome do autor do aviso"
+    },
+    "fixado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o aviso fica fixado no topo"
+    },
+    "alerta_destaque": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exibe alerta modal piscante para o usu\u00e1rio dar OK"
+    }
+  },
+  "required": [
+    "titulo",
+    "mensagem"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
+  }
+}

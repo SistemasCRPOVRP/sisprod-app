@@ -1,0 +1,75 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "crpm": {
+      "type": "string",
+      "description": "CRPM (ex: CRPM/VRP)"
+    },
+    "bpm": {
+      "type": "string",
+      "description": "BPM (ex: 23\u00ba BPM)"
+    },
+    "companhia": {
+      "type": "string",
+      "description": "Companhia (Cia)"
+    },
+    "pelotao": {
+      "type": "string",
+      "description": "Pelot\u00e3o (Pel)"
+    },
+    "gpm": {
+      "type": "string",
+      "description": "GPM"
+    },
+    "municipio": {
+      "type": "string",
+      "description": "Munic\u00edpio"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo"
+      ],
+      "default": "ativo"
+    }
+  },
+  "required": [
+    "bpm",
+    "companhia"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "planejamento"
+          ]
+        }
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "planejamento"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "planejamento"
+          ]
+        }
+      }
+    }
+  }
+}

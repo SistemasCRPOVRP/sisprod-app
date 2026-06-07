@@ -1,0 +1,125 @@
+{
+  "name": "Production",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do registro"
+    },
+    "periodo": {
+      "type": "string",
+      "description": "Per\u00edodo/trimestre (ex: 2026-T2)"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "ID composto da unidade (bpm|cia|pel|gpm)"
+    },
+    "organization_name": {
+      "type": "string",
+      "description": "Nome da unidade para exibi\u00e7\u00e3o"
+    },
+    "bpm": {
+      "type": "string",
+      "description": "Batalh\u00e3o (ex: 23\u00ba BPM)"
+    },
+    "companhia": {
+      "type": "string",
+      "description": "Companhia (ex: 1\u00aa Cia)"
+    },
+    "pelotao": {
+      "type": "string",
+      "description": "Pelot\u00e3o (ex: 1\u00ba Pel)"
+    },
+    "gpm": {
+      "type": "string",
+      "description": "GPM (ex: 1\u00ba GPM)"
+    },
+    "municipio": {
+      "type": "string",
+      "description": "Munic\u00edpio onde a unidade est\u00e1 fixada"
+    },
+    "indicator_id": {
+      "type": "string",
+      "description": "ID do indicador"
+    },
+    "indicator_name": {
+      "type": "string",
+      "description": "Nome do indicador"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "Preventiva",
+        "Repressiva",
+        "Apreens\u00e3o",
+        "Atendimento",
+        "Economia"
+      ],
+      "description": "Categoria do indicador"
+    },
+    "quantidade": {
+      "type": "number",
+      "description": "Quantidade registrada"
+    },
+    "peso": {
+      "type": "number",
+      "description": "Peso do indicador no momento do registro"
+    },
+    "pontuacao": {
+      "type": "number",
+      "description": "Pontua\u00e7\u00e3o calculada (quantidade \u00d7 peso)"
+    },
+    "observacao": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    },
+    "anexo_url": {
+      "type": "string",
+      "description": "URL do arquivo anexo"
+    },
+    "lancado_por": {
+      "type": "string",
+      "description": "Id. Funcional do usu\u00e1rio que lan\u00e7ou"
+    },
+    "lancado_por_nome": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio que lan\u00e7ou"
+    }
+  },
+  "required": [
+    "data",
+    "bpm",
+    "companhia",
+    "indicator_id",
+    "quantidade"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
