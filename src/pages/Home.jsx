@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getCurrentPeriodo, getPeriodoLabel } from '@/lib/utils';
+import { base44 } from '@/api/base44Client';
 import { useProductions, useIndicators } from '@/hooks/useProduction';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { subDays, startOfWeek, startOfMonth, format } from 'date-fns';

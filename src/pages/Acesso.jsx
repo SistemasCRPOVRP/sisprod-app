@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppAuth } from '@/lib/AppAuthContext';
+import { base44 } from '@/api/base44Client';
 import { CRPM, BPMs, getCias, getPelotoes, getGPMs } from '@/lib/orgData';
 import { toast } from 'sonner';
 
