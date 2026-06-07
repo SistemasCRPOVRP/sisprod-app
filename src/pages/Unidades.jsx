@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Building2, ChevronDown, ChevronRight, Upload, FileText, RefreshCw, Lock, Unlock, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import AtualizarOrganogramaDialog from '@/components/unidades/AtualizarOrganogramaDialog';
 import OrgEditPanel from '@/components/unidades/OrgEditPanel';

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { useIndicators } from '@/hooks/useProduction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

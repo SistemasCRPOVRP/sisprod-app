@@ -7,7 +7,6 @@ import {
   ArrowRight, Loader2, FileText, X, ChevronDown, ChevronRight,
   Building2, Users, User, Shield
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 // ── Identifica o tipo da linha pelo padrão textual ──────────────────────────

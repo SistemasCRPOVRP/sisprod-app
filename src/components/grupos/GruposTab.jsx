@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { useGruposConcorrentes, useGruposMutations } from '@/hooks/useGruposConcorrentes';
 import GrupoCard from './GrupoCard';
 import GrupoDialog from './GrupoDialog';
-import { base44 } from '@/api/base44Client';
 
 export default function GruposTab({ tipoNivel, tipoLabel }) {
   const { grupos, isLoading } = useGruposConcorrentes(tipoNivel);

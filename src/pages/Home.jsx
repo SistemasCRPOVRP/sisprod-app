@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getCurrentPeriodo, getPeriodoLabel } from '@/lib/utils';
 import { useProductions, useIndicators } from '@/hooks/useProduction';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-//import { base44 } from '@/api/base44Client';
 import { subDays, startOfWeek, startOfMonth, format } from 'date-fns';
 
 const BM_BRASAO = 'https://media.base44.com/images/public/69ea1019a6b072f9661e6c7e/a5141bf0c_Braso_Brigada_Militar_do_Rio_Grande_do_Sul.png';
