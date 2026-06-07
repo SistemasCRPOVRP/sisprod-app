@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+//import { base44 } from '@/api/base44Client';
 import { getCurrentPeriodo } from '@/lib/utils';
 import { CONSOLIDACAO_MUNICIPAL, ORG_STRUCTURE } from '@/lib/orgData';
 
