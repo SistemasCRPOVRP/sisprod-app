@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 
-// Configuração obtida diretamente das variáveis de ambiente da Vercel
+// Configuração obtida diretamente das variáveis de ambiente que cadastramos na Vercel
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -9,14 +9,15 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+// Inicializa o Firebase protegendo contra o erro de aplicativo duplicado (Evita a tela branca)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getDatabase(app);
 
-// Emulador do cliente Base44 adaptado para ler o Firebase mantendo a estrutura original do app
+// Motor adaptador do antigo Base44 focado em ler o Firebase por texto puro
 export const base44 = {
   auth: {
     login: async ({ username, password }) => {
@@ -24,12 +25,12 @@ export const base44 = {
       const snapshot = await get(userRef);
       
       if (!snapshot.exists()) {
-        throw new Error('Usuário não encontrado');
+        throw new Error('Usuário não encontrado no sistema.');
       }
       
       const userData = snapshot.val();
       if (userData.senha !== password) {
-        throw new Error('Senha incorreta');
+        throw new Error('Senha incorreta.');
       }
       
       return { user: { id: username, ...userData } };
