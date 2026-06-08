@@ -6,18 +6,14 @@ import pluginUnusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
-    files: ["src/**/*.{js,mjs,cjs,jsx}"],
-
-    ignores: [
-      "src/lib/**/*",
-      "src/components/ui/**/*",
-      "dist",
-      "node_modules"
+    files: [
+      "src/components/**/*.{js,mjs,cjs,jsx}",
+      "src/pages/**/*.{js,mjs,cjs,jsx}",
+      "src/Layout.jsx",
     ],
-
+    ignores: ["src/lib/**/*", "src/components/ui/**/*"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
-
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
@@ -28,28 +24,21 @@ export default [
         },
       },
     },
-
     settings: {
       react: {
         version: "detect",
       },
     },
-
     plugins: {
       react: pluginReact,
       "react-hooks": pluginReactHooks,
       "unused-imports": pluginUnusedImports,
     },
-
     rules: {
-      // evita conflito com unused-imports
       "no-unused-vars": "off",
-
       "react/jsx-uses-vars": "error",
       "react/jsx-uses-react": "error",
-
       "unused-imports/no-unused-imports": "error",
-
       "unused-imports/no-unused-vars": [
         "warn",
         {
@@ -59,17 +48,12 @@ export default [
           argsIgnorePattern: "^_",
         },
       ],
-
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
-
       "react/no-unknown-property": [
         "error",
-        {
-          ignore: ["cmdk-input-wrapper", "toast-close"],
-        },
+        { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
-
       "react-hooks/rules-of-hooks": "error",
     },
   },

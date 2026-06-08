@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 
 export function useGruposConcorrentes(tipoNivel) {
   const queryClient = useQueryClient();

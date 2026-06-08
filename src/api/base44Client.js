@@ -1,59 +1,166 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getDatabase, ref, get, set, update } from 'firebase/database';
+// src/api/base44Client.js
 
-// Configuração obtida diretamente das variáveis de ambiente que cadastramos na Vercel
+import { initializeApp } from 'firebase/app';
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+} from 'firebase/firestore';
+
+// =========================
+// FIREBASE INIT
+// =========================
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Inicializa o Firebase protegendo contra o erro de aplicativo duplicado (Evita a tela branca)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Motor adaptador do antigo Base44 focado em ler o Firebase por texto puro
+// =========================
+// UTIL: ORDER PARSER
+// =========================
+
+function parseOrder(sort) {
+  if (!sort) return null;
+
+  const isDesc = sort.startsWith('-');
+  const field = isDesc ? sort.slice(1) : sort;
+
+  return orderBy(field, isDesc ? 'desc' : 'asc');
+}
+
+// =========================
+// UTIL: COLLECTION NAME
+// =========================
+
+const getCollection = (entity) => collection(db, entity);
+
+// =========================
+// BASE ENTITY FACTORY
+// =========================
+
+function createEntity(entityName) {
+  const col = getCollection(entityName);
+
+  return {
+    async create(data) {
+      const ref = await addDoc(col, {
+        ...data,
+        created_date: new Date().toISOString(),
+      });
+      return { id: ref.id, ...data };
+    },
+
+    async update(id, data) {
+      const ref = doc(db, entityName, id);
+      await updateDoc(ref, data);
+      return { id, ...data };
+    },
+
+    async delete(id) {
+      const ref = doc(db, entityName, id);
+      await deleteDoc(ref);
+      return true;
+    },
+
+    async get(id) {
+      const ref = doc(db, entityName, id);
+      const snap = await getDoc(ref);
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    },
+
+    async list(sort, limitValue = 9999) {
+      const constraints = [];
+
+      if (sort) constraints.push(parseOrder(sort));
+      if (limitValue) constraints.push(limit(limitValue));
+
+      const q = query(col, ...constraints.filter(Boolean));
+      const snap = await getDocs(q);
+
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+
+    async filter(filters = {}, sort, limitValue = 9999) {
+      const constraints = [];
+
+      Object.entries(filters || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          constraints.push(where(key, '==', value));
+        }
+      });
+
+      if (sort) constraints.push(parseOrder(sort));
+      if (limitValue) constraints.push(limit(limitValue));
+
+      const q = query(col, ...constraints);
+      const snap = await getDocs(q);
+
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+
+    subscribe(callback) {
+      const q = query(col);
+
+      return onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const data = { id: change.doc.id, ...change.doc.data() };
+
+          if (change.type === 'added') {
+            callback({ type: 'create', data });
+          }
+          if (change.type === 'modified') {
+            callback({ type: 'update', data });
+          }
+          if (change.type === 'removed') {
+            callback({ type: 'delete', data });
+          }
+        });
+      });
+    },
+  };
+}
+
+// =========================
+// ENTITIES (COMPAT BASE44)
+// =========================
+
+const entities = {
+  AppUser: createEntity('AppUser'),
+  AccessRequest: createEntity('AccessRequest'),
+  AuditLog: createEntity('AuditLog'),
+  Aviso: createEntity('Aviso'),
+  EditRequest: createEntity('EditRequest'),
+  Indicator: createEntity('Indicator'),
+  Organization: createEntity('Organization'),
+  Production: createEntity('Production'),
+  RankingConfig: createEntity('RankingConfig'),
+  RankingComposicao: createEntity('RankingComposicao'),
+  SystemConfig: createEntity('SystemConfig'),
+  User: createEntity('User'),
+};
+
+// =========================
+// EXPORT COMPATIBILITY LAYER
+// =========================
+
 export const base44 = {
-  auth: {
-    login: async ({ username, password }) => {
-      const userRef = ref(db, `usuarios/${username.trim().toLowerCase()}`);
-      const snapshot = await get(userRef);
-      
-      if (!snapshot.exists()) {
-        throw new Error('Usuário não encontrado no sistema.');
-      }
-      
-      const userData = snapshot.val();
-      if (userData.senha !== password) {
-        throw new Error('Senha incorreta.');
-      }
-      
-      return { user: { id: username, ...userData } };
-    }
-  },
-  entities: (entityName) => ({
-    get: async (id) => {
-      const nodeRef = ref(db, `${entityName}/${id}`);
-      const snapshot = await get(nodeRef);
-      return snapshot.exists() ? snapshot.val() : null;
-    },
-    create: async (data) => {
-      const id = data.id || Math.random().toString(36).substring(2, 9);
-      const nodeRef = ref(db, `${entityName}/${id}`);
-      await set(nodeRef, data);
-      return { id, ...data };
-    },
-    update: async (id, data) => {
-      const nodeRef = ref(db, `${entityName}/${id}`);
-      await update(nodeRef, data);
-      return { id, ...data };
-    }
-  })
+  entities,
 };
-
-export default base44;
