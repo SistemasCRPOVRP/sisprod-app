@@ -9,7 +9,8 @@ import {
   orderBy
 } from 'firebase/firestore';
 
-import { db } from '@/api/base44Client';
+//import { db } from '@/api/base44Client';
+import { db } from '@/api/firebase';
 import { CONSOLIDACAO_MUNICIPAL, ORG_STRUCTURE } from '@/lib/orgData';
 
 /* =========================================================
