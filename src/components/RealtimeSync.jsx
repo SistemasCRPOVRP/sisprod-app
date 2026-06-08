@@ -6,7 +6,7 @@ import {
   collection,
 } from 'firebase/firestore';
 
-import { db } from '@/api/base44Client';
+//import { db } from '@/api/base44Client';
 import { useAppAuth } from '@/lib/AppAuthContext';
 
 export default function RealtimeSync() {
