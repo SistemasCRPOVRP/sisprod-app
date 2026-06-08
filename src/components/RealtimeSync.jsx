@@ -1,121 +1,174 @@
-/**
- * RealtimeSync — sincronização em tempo real para todos os usuários logados.
- * Montado uma única vez no AppLayout.
- * Usa subscriptions do base44 SDK para invalidar queries automaticamente
- * sempre que qualquer entidade for criada, atualizada ou deletada.
- */
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import {
+  onSnapshot,
+  collection,
+} from 'firebase/firestore';
+
+import { db } from '@/api/base44Client';
 import { useAppAuth } from '@/lib/AppAuthContext';
 
 export default function RealtimeSync() {
   const queryClient = useQueryClient();
   const { appUser } = useAppAuth();
 
-  // Invalida todas as queries relacionadas a produção de uma vez
   const invalidateProductions = useCallback(() => {
-    // Invalida TODAS as queries que começam com estas chaves (incluindo subchaves como periodo)
     queryClient.invalidateQueries({ queryKey: ['all-productions'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['productions'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['hist-lancamento'], exact: false });
   }, [queryClient]);
 
   useEffect(() => {
-    const subs = [];
+    const unsubscribers = [];
 
-    // ── Production ──────────────────────────────────────────────
-    subs.push(base44.entities.Production.subscribe((event) => {
-      invalidateProductions();
-      // Notifica apenas se o evento veio de outro usuário
-      if (event.type === 'create' && event.data?.created_by !== appUser?.email) {
-        toast.info('📋 Novo lançamento registrado', {
-          description: `${event.data?.indicator_name || 'Indicador'} — ${event.data?.organization_name || ''}`,
-          duration: 3500,
-        });
-      }
-      if (event.type === 'delete') {
+    // ─────────────────────────────────────────────
+    // PRODUCTION
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'Production'), (snapshot) => {
         invalidateProductions();
-      }
-    }));
 
-    // ── Indicator ────────────────────────────────────────────────
-    subs.push(base44.entities.Indicator.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['indicators'] });
-    }));
+        snapshot.docChanges().forEach((change) => {
+          const data = change.doc.data();
 
-    // ── Organization ─────────────────────────────────────────────
-    subs.push(base44.entities.Organization.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['organizations'] });
-    }));
+          if (change.type === 'added' && data?.created_by !== appUser?.email) {
+            toast.info('📋 Novo lançamento registrado', {
+              description: `${data?.indicator_name || 'Indicador'} — ${data?.organization_name || ''}`,
+              duration: 3500,
+            });
+          }
+        });
+      })
+    );
 
-    // ── AppUser ──────────────────────────────────────────────────
-    subs.push(base44.entities.AppUser.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['app-users'] });
-    }));
+    // ─────────────────────────────────────────────
+    // INDICATOR
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'Indicator'), () => {
+        queryClient.invalidateQueries({ queryKey: ['indicators'] });
+      })
+    );
 
-    // ── AccessRequest ────────────────────────────────────────────
-    subs.push(base44.entities.AccessRequest.subscribe((event) => {
-      queryClient.invalidateQueries({ queryKey: ['access-requests'] });
-      if (event.type === 'update' && event.data?.status === 'aprovado') {
-        toast.success('✅ Solicitação de acesso aprovada', { duration: 4000 });
-      }
-    }));
+    // ─────────────────────────────────────────────
+    // ORGANIZATION
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'Organization'), () => {
+        queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      })
+    );
 
-    // ── EditRequest ──────────────────────────────────────────────
-    subs.push(base44.entities.EditRequest.subscribe((event) => {
-      queryClient.invalidateQueries({ queryKey: ['edit-requests'] });
-      if (event.type === 'update' && event.data?.status === 'aprovado') {
-        toast.success('✅ Solicitação de edição aprovada! Você já pode editar o registro.', { duration: 5000 });
-      }
-    }));
+    // ─────────────────────────────────────────────
+    // APP USER
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'AppUser'), () => {
+        queryClient.invalidateQueries({ queryKey: ['app-users'] });
+      })
+    );
 
-    // ── RankingComposicao ────────────────────────────────────────
-    subs.push(base44.entities.RankingComposicao.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['ranking-composicoes'] });
-      queryClient.invalidateQueries({ queryKey: ['composicoes'] });
-    }));
+    // ─────────────────────────────────────────────
+    // ACCESS REQUEST
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'AccessRequest'), (snapshot) => {
+        queryClient.invalidateQueries({ queryKey: ['access-requests'] });
 
-    // ── RankingConfig ────────────────────────────────────────────
-    subs.push(base44.entities.RankingConfig.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['ranking-config'] });
-    }));
+        snapshot.docChanges().forEach((change) => {
+          const data = change.doc.data();
 
-    // ── SystemConfig ─────────────────────────────────────────────
-    subs.push(base44.entities.SystemConfig.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['system-config'] });
-    }));
+          if (change.type === 'modified' && data?.status === 'aprovado') {
+            toast.success('✅ Solicitação de acesso aprovada', { duration: 4000 });
+          }
+        });
+      })
+    );
 
-    // ── AuditLog ─────────────────────────────────────────────────
-    subs.push(base44.entities.AuditLog.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
-    }));
+    // ─────────────────────────────────────────────
+    // EDIT REQUEST
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'EditRequest'), (snapshot) => {
+        queryClient.invalidateQueries({ queryKey: ['edit-requests'] });
 
-    // ── Aviso ────────────────────────────────────────────────────
-    subs.push(base44.entities.Aviso.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['avisos'], exact: false });
-    }));
+        snapshot.docChanges().forEach((change) => {
+          const data = change.doc.data();
 
-    return () => subs.forEach(unsub => unsub());
+          if (change.type === 'modified' && data?.status === 'aprovado') {
+            toast.success('✅ Solicitação de edição aprovada! Você já pode editar o registro.', {
+              duration: 5000,
+            });
+          }
+        });
+      })
+    );
+
+    // ─────────────────────────────────────────────
+    // RANKING COMPOSIÇÃO
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'RankingComposicao'), () => {
+        queryClient.invalidateQueries({ queryKey: ['ranking-composicoes'] });
+        queryClient.invalidateQueries({ queryKey: ['composicoes'] });
+      })
+    );
+
+    // ─────────────────────────────────────────────
+    // RANKING CONFIG
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'RankingConfig'), () => {
+        queryClient.invalidateQueries({ queryKey: ['ranking-config'] });
+      })
+    );
+
+    // ─────────────────────────────────────────────
+    // SYSTEM CONFIG
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'SystemConfig'), () => {
+        queryClient.invalidateQueries({ queryKey: ['system-config'] });
+      })
+    );
+
+    // ─────────────────────────────────────────────
+    // AUDIT LOG
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'AuditLog'), () => {
+        queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+      })
+    );
+
+    // ─────────────────────────────────────────────
+    // AVISO
+    // ─────────────────────────────────────────────
+    unsubscribers.push(
+      onSnapshot(collection(db, 'Aviso'), () => {
+        queryClient.invalidateQueries({ queryKey: ['avisos'], exact: false });
+      })
+    );
+
+    return () => unsubscribers.forEach((unsub) => unsub());
   }, [queryClient, invalidateProductions, appUser?.email]);
 
-  // Revalida tudo ao recuperar conexão com a internet
+  // ── online refresh ──
   useEffect(() => {
-    const handleOnline = () => {
-      queryClient.invalidateQueries();
-    };
+    const handleOnline = () => queryClient.invalidateQueries();
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
   }, [queryClient]);
 
-  // Revalida tudo ao voltar para o app (visibilidade da página)
+  // ── visibility refresh ──
   useEffect(() => {
     const handleVisible = () => {
       if (document.visibilityState === 'visible') {
         queryClient.invalidateQueries();
       }
     };
+
     document.addEventListener('visibilitychange', handleVisible);
     return () => document.removeEventListener('visibilitychange', handleVisible);
   }, [queryClient]);
