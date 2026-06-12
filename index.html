@@ -2,12 +2,15 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <!-- Sem manifest PWA para evitar cache agressivo em dispositivos -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="theme-color" content="#1e5631" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SISPROD BM" />
+    <meta name="description" content="Sistema de Produtividade Operacional — Brigada Militar RS" />
     <title>SISPROD BM - Produtividade Operacional</title>
     <script>
       (function () {
@@ -23,19 +26,15 @@
         var scale = 1.0;
 
         if (isMobile) {
-          // Celular: viewport padrão, escala 1.0
           scale = 1.0;
         } else if (isTablet) {
-          // Tablet: escala ligeiramente menor para acomodar mais conteúdo
           if (w >= 1024) scale = 1.0;
           else if (w >= 768) scale = 0.95;
           else scale = 0.9;
         } else {
-          // PC/Desktop: escala normal
           scale = 1.0;
         }
 
-        // Aplica viewport dinâmico
         var viewport = document.querySelector('meta[name="viewport"]');
         if (viewport) {
           viewport.setAttribute('content',
@@ -46,14 +45,12 @@
           );
         }
 
-        // Adiciona classe no html para uso via CSS/JS
         var html = document.documentElement;
         html.classList.remove('device-mobile', 'device-tablet', 'device-pc');
         if (isMobile) html.classList.add('device-mobile');
         else if (isTablet) html.classList.add('device-tablet');
         else html.classList.add('device-pc');
 
-        // Expõe tipo de dispositivo globalmente
         window.__deviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'pc';
       })();
     </script>
