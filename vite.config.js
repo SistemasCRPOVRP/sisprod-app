@@ -20,22 +20,9 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       },
       workbox: {
@@ -69,37 +56,19 @@ export default defineConfig({
     }
   },
   build: {
-    // Aumenta o limite do aviso para 1MB (evita o warning)
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Divide o bundle em chunks menores por biblioteca
-        manualChunks: {
-          // React core
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // UI components
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-select',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-label',
-            '@radix-ui/react-badge',
-            '@radix-ui/react-slot',
-          ],
-          // Firebase
-          'firebase-vendor': ['firebase/app', 'firebase/firestore'],
-          // Charts e visualização
-          'charts-vendor': ['recharts'],
-          // Utilitários de data
-          'date-vendor': ['date-fns'],
-          // Mapa (Leaflet é pesado)
-          'map-vendor': ['leaflet', 'react-leaflet'],
-          // Excel export
-          'xlsx-vendor': ['xlsx'],
-          // Animações
-          'motion-vendor': ['framer-motion'],
-          // Tanstack Query
-          'query-vendor': ['@tanstack/react-query'],
+        manualChunks(id) {
+          if (id.includes('node_modules/firebase')) return 'firebase-vendor';
+          if (id.includes('node_modules/leaflet') || id.includes('node_modules/react-leaflet')) return 'map-vendor';
+          if (id.includes('node_modules/recharts')) return 'charts-vendor';
+          if (id.includes('node_modules/framer-motion')) return 'motion-vendor';
+          if (id.includes('node_modules/xlsx')) return 'xlsx-vendor';
+          if (id.includes('node_modules/date-fns')) return 'date-vendor';
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) return 'react-vendor';
+          if (id.includes('node_modules/@tanstack')) return 'query-vendor';
+          if (id.includes('node_modules/@radix-ui')) return 'ui-vendor';
         }
       }
     }
