@@ -67,5 +67,41 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  build: {
+    // Aumenta o limite do aviso para 1MB (evita o warning)
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Divide o bundle em chunks menores por biblioteca
+        manualChunks: {
+          // React core
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // UI components
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-select',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-label',
+            '@radix-ui/react-badge',
+            '@radix-ui/react-slot',
+          ],
+          // Firebase
+          'firebase-vendor': ['firebase/app', 'firebase/firestore'],
+          // Charts e visualização
+          'charts-vendor': ['recharts'],
+          // Utilitários de data
+          'date-vendor': ['date-fns'],
+          // Mapa (Leaflet é pesado)
+          'map-vendor': ['leaflet', 'react-leaflet'],
+          // Excel export
+          'xlsx-vendor': ['xlsx'],
+          // Animações
+          'motion-vendor': ['framer-motion'],
+          // Tanstack Query
+          'query-vendor': ['@tanstack/react-query'],
+        }
+      }
+    }
   }
 })
