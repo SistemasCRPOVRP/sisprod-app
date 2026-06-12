@@ -14,7 +14,7 @@ import { db } from '@/api/firebase';
 import { CONSOLIDACAO_MUNICIPAL, ORG_STRUCTURE } from '@/lib/orgData';
 
 /* =========================================================
-   UTIL (mesma lógica original mantida)
+   UTIL
 ========================================================= */
 
 function getMunicipioPrincipal(bpm, companhia, pelotao, _municipioRegistro) {
@@ -47,11 +47,7 @@ export function useOrganizations() {
       const snap = await getDocs(
         query(collection(db, 'Organization'), where('status', '==', 'ativo'))
       );
-
-      return snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     initialData: [],
   });
@@ -68,11 +64,7 @@ export function useIndicators() {
       const snap = await getDocs(
         query(collection(db, 'Indicator'), where('status', '==', 'ativo'))
       );
-
-      return snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     initialData: [],
   });
@@ -90,11 +82,9 @@ export function useProductions(periodo) {
       collection(db, 'Production'),
       where('periodo', '==', periodo)
     );
-
     const unsub = onSnapshot(qRef, () => {
       queryClient.invalidateQueries({ queryKey: ['productions'], exact: false });
     });
-
     return () => unsub();
   }, [queryClient, periodo]);
 
@@ -105,15 +95,8 @@ export function useProductions(periodo) {
         collection(db, 'Production'),
         where('periodo', '==', periodo)
       );
-
       const snap = await getDocs(qRef);
-
-      const data = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // ordenação mais recente primeiro
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return data.sort((a, b) => {
         const da = b.data || '';
         const dbd = a.data || '';
@@ -134,12 +117,11 @@ export function useAllProductions() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'Production'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'Production'), () => {
       queryClient.invalidateQueries({ queryKey: ['all-productions'] });
       queryClient.invalidateQueries({ queryKey: ['productions'] });
       queryClient.invalidateQueries({ queryKey: ['hist-lancamento'] });
     });
-
     return () => unsub();
   }, [queryClient]);
 
@@ -147,12 +129,7 @@ export function useAllProductions() {
     queryKey: ['all-productions'],
     queryFn: async () => {
       const snap = await getDocs(collection(db, 'Production'));
-
-      const records = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
+      const records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return records.sort((a, b) => {
         const da = b.data || '';
         const dbd = a.data || '';
@@ -167,7 +144,7 @@ export function useAllProductions() {
 }
 
 /* =========================================================
-   RANKING (MANTIDO — NÃO DEPENDE MAIS DO BASE44)
+   RANKING PADRÃO
 ========================================================= */
 
 export function computeRankings(productions, level = 'gpm') {
@@ -181,46 +158,28 @@ export function computeRankings(productions, level = 'gpm') {
       key = `${p.bpm}|${p.companhia}|${p.pelotao}|${p.gpm}`;
       name = [p.gpm, p.pelotao, p.companhia, p.bpm].filter(Boolean).join(' / ');
       municipio = p.municipio || getMunicipioPrincipal(p.bpm, p.companhia, p.pelotao, p.municipio);
-    }
-
-    else if (level === 'pelotao') {
+    } else if (level === 'pelotao') {
       if (!p.pelotao) return;
       key = `${p.bpm}|${p.companhia}|${p.pelotao}`;
       name = [p.pelotao, p.companhia, p.bpm].filter(Boolean).join(' / ');
       municipio = getMunicipioPrincipal(p.bpm, p.companhia, p.pelotao, p.municipio);
-    }
-
-    else if (level === 'companhia') {
+    } else if (level === 'companhia') {
       if (!p.companhia) return;
       key = `${p.bpm}|${p.companhia}`;
       name = [p.companhia, p.bpm].filter(Boolean).join(' / ');
       municipio = getMunicipioPrincipal(p.bpm, p.companhia, null, p.municipio);
-    }
-
-    else if (level === 'bpm') {
+    } else if (level === 'bpm') {
       if (!p.bpm) return;
       key = p.bpm;
       name = p.bpm;
       municipio = '';
-    }
-
-    else return;
+    } else return;
 
     if (!scoreMap[key]) {
-      scoreMap[key] = {
-        name,
-        municipio,
-        score: 0,
-        preventiva: 0,
-        repressiva: 0,
-        apreensao: 0,
-        atendimento: 0,
-        economia: 0,
-      };
+      scoreMap[key] = { name, municipio, score: 0, preventiva: 0, repressiva: 0, apreensao: 0, atendimento: 0, economia: 0 };
     }
 
     scoreMap[key].score += (p.pontuacao || 0);
-
     if (p.categoria === 'Preventiva') scoreMap[key].preventiva += (p.pontuacao || 0);
     if (p.categoria === 'Repressiva') scoreMap[key].repressiva += (p.pontuacao || 0);
     if (p.categoria === 'Apreensão') scoreMap[key].apreensao += (p.pontuacao || 0);
@@ -236,7 +195,7 @@ export function computeRankings(productions, level = 'gpm') {
 }
 
 /* =========================================================
-   MUNICIPAL RANKING (SIMPLIFICADO FIREBASE)
+   MUNICIPAL RANKING
 ========================================================= */
 
 export function computeMunicipalRanking(productions) {
@@ -245,25 +204,12 @@ export function computeMunicipalRanking(productions) {
   productions.forEach(p => {
     const municipio = p.municipio;
     if (!municipio) return;
-
     const key = normalizeMunicipio(municipio);
-
     if (!scoreMap[key]) {
-      scoreMap[key] = {
-        name: municipio,
-        municipio,
-        score: 0,
-        preventiva: 0,
-        repressiva: 0,
-        apreensao: 0,
-        atendimento: 0,
-        economia: 0,
-      };
+      scoreMap[key] = { name: municipio, municipio, score: 0, preventiva: 0, repressiva: 0, apreensao: 0, atendimento: 0, economia: 0 };
     }
-
     const e = scoreMap[key];
     e.score += (p.pontuacao || 0);
-
     if (p.categoria === 'Preventiva') e.preventiva += (p.pontuacao || 0);
     if (p.categoria === 'Repressiva') e.repressiva += (p.pontuacao || 0);
     if (p.categoria === 'Apreensão') e.apreensao += (p.pontuacao || 0);
@@ -275,4 +221,61 @@ export function computeMunicipalRanking(productions) {
     if (b.score !== a.score) return b.score - a.score;
     return b.repressiva - a.repressiva;
   });
+}
+
+/* =========================================================
+   RANKING POR COMPOSIÇÃO (grupos personalizados)
+   Usado por Dashboard.jsx e ImprimirRankingDialog.jsx
+========================================================= */
+
+export function computeComposicaoRanking(productions, composicoes = []) {
+  // composicoes: array de { id, nome, organization_ids: [...], status }
+  const ativas = composicoes.filter(c => c.status === 'ativo');
+
+  return ativas.map(comp => {
+    const ids = comp.organization_ids || [];
+    const prods = productions.filter(p => ids.includes(p.organization_id));
+
+    const score = prods.reduce((s, p) => s + (p.pontuacao || 0), 0);
+    const preventiva = prods.filter(p => p.categoria === 'Preventiva').reduce((s, p) => s + (p.pontuacao || 0), 0);
+    const repressiva = prods.filter(p => p.categoria === 'Repressiva').reduce((s, p) => s + (p.pontuacao || 0), 0);
+    const apreensao = prods.filter(p => p.categoria === 'Apreensão').reduce((s, p) => s + (p.pontuacao || 0), 0);
+    const atendimento = prods.filter(p => p.categoria === 'Atendimento').reduce((s, p) => s + (p.pontuacao || 0), 0);
+    const economia = prods.filter(p => p.categoria === 'Economia').reduce((s, p) => s + (p.pontuacao || 0), 0);
+
+    return {
+      id: comp.id,
+      name: comp.nome,
+      municipio: '',
+      score,
+      preventiva,
+      repressiva,
+      apreensao,
+      atendimento,
+      economia,
+      organization_ids: ids,
+    };
+  }).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.repressiva !== a.repressiva) return b.repressiva - a.repressiva;
+    return b.apreensao - a.apreensao;
+  });
+}
+
+/* =========================================================
+   CATEGORY BREAKDOWN
+   Usado por Dashboard.jsx para gráfico de categorias
+========================================================= */
+
+export function computeCategoryBreakdown(productions) {
+  const categorias = ['Preventiva', 'Repressiva', 'Apreensão', 'Atendimento', 'Economia'];
+  return categorias.map(cat => {
+    const prods = productions.filter(p => p.categoria === cat);
+    return {
+      categoria: cat,
+      total: prods.reduce((s, p) => s + (p.pontuacao || 0), 0),
+      quantidade: prods.reduce((s, p) => s + (p.quantidade || 0), 0),
+      registros: prods.length,
+    };
+  }).filter(c => c.total > 0);
 }
