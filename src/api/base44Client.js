@@ -31,7 +31,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const db = getFirestore(app);
 
 // =========================
 // UTIL: ORDER PARSER
@@ -39,10 +39,8 @@ const db = getFirestore(app);
 
 function parseOrder(sort) {
   if (!sort) return null;
-
   const isDesc = sort.startsWith('-');
   const field = isDesc ? sort.slice(1) : sort;
-
   return orderBy(field, isDesc ? 'desc' : 'asc');
 }
 
@@ -51,6 +49,45 @@ function parseOrder(sort) {
 // =========================
 
 const getCollection = (entity) => collection(db, entity);
+
+// =========================
+// CLOUDINARY UPLOAD
+// =========================
+
+export async function uploadFile(file) {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+  const isPDF = file.type === 'application/pdf';
+  const endpoint = isPDF
+    ? `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`
+    : `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('folder', 'sisprod');
+
+  const response = await fetch(endpoint, { method: 'POST', body: formData });
+
+  if (!response.ok) throw new Error('Erro ao fazer upload do arquivo');
+
+  const data = await response.json();
+  return { file_url: data.secure_url };
+}
+
+// =========================
+// UTIL: GET DOWNLOAD URL
+// =========================
+
+export function getDownloadUrl(url) {
+  if (!url) return url;
+  // PDFs salvos como /image/upload/ precisam ser convertidos para /raw/upload/
+  if (url.includes('/image/upload/') && url.endsWith('.pdf')) {
+    return url.replace('/image/upload/', '/raw/upload/fl_attachment/');
+  }
+  return url;
+}
 
 // =========================
 // BASE ENTITY FACTORY
@@ -88,50 +125,35 @@ function createEntity(entityName) {
 
     async list(sort, limitValue = 9999) {
       const constraints = [];
-
       if (sort) constraints.push(parseOrder(sort));
       if (limitValue) constraints.push(limit(limitValue));
-
       const q = query(col, ...constraints.filter(Boolean));
       const snap = await getDocs(q);
-
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     async filter(filters = {}, sort, limitValue = 9999) {
       const constraints = [];
-
       Object.entries(filters || {}).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           constraints.push(where(key, '==', value));
         }
       });
-
       if (sort) constraints.push(parseOrder(sort));
       if (limitValue) constraints.push(limit(limitValue));
-
       const q = query(col, ...constraints);
       const snap = await getDocs(q);
-
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     subscribe(callback) {
       const q = query(col);
-
       return onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           const data = { id: change.doc.id, ...change.doc.data() };
-
-          if (change.type === 'added') {
-            callback({ type: 'create', data });
-          }
-          if (change.type === 'modified') {
-            callback({ type: 'update', data });
-          }
-          if (change.type === 'removed') {
-            callback({ type: 'delete', data });
-          }
+          if (change.type === 'added') callback({ type: 'create', data });
+          if (change.type === 'modified') callback({ type: 'update', data });
+          if (change.type === 'removed') callback({ type: 'delete', data });
         });
       });
     },
