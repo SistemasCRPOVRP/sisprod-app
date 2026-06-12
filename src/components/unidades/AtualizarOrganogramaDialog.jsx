@@ -142,38 +142,7 @@ REGRAS:
 - NÃO invente unidades que não estejam no PDF
 - GPMs são folhas — não possuem filhos
 
-Retorne APENAS um JSON puro (sem markdown, sem texto extra) com este formato:
-{
-  "nome": "CRPM/VRP — Comando",
-  "local": "Santa Cruz do Sul",
-  "tipo": "crpm",
-  "filhos": [
-    {
-      "nome": "23º BPM",
-      "local": "Santa Cruz do Sul",
-      "tipo": "btl",
-      "filhos": [
-        {
-          "nome": "1ª Cia",
-          "local": "Santa Cruz do Sul",
-          "tipo": "cia",
-          "filhos": [
-            {
-              "nome": "1º Pel",
-              "local": "Santa Cruz do Sul",
-              "tipo": "pel",
-              "filhos": [
-                { "nome": "1º GPM", "local": "Santa Cruz do Sul", "tipo": "gpm" }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-Tipos válidos: "crpm", "btl", "cia", "pel", "gpm". Retorne APENAS o JSON.`,
+Retorne APENAS um JSON puro (sem markdown, sem texto extra) seguindo a estrutura hierárquica com campos: nome, local, tipo e filhos. Tipos válidos: crpm, btl, cia, pel, gpm. GPMs não possuem filhos. Retorne APENAS o JSON.`,
           },
         ],
       }),
