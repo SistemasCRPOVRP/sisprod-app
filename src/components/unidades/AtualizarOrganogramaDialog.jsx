@@ -119,34 +119,23 @@ function fileToBase64(file) {
 
 // ── Chama a API da Anthropic diretamente com o PDF em base64 ────────────────
 async function invocarLLMComPDF(base64Data) {
+  const promptText = 'Voce e um especialista em organogramas militares da Brigada Militar do RS. '
+    + 'Analise o PDF do organograma e extraia TODA a estrutura hierarquica completa. '
+    + 'REGRAS: Identifique os niveis CRPM/Comando, BPM Batalhao, CIA Companhia, Pelotao, GPM. '
+    + 'Para cada unidade identifique o municipio/local sede. '
+    + 'Nao invente unidades que nao estejam no PDF. GPMs nao possuem filhos. '
+    + 'Retorne APENAS um JSON puro sem markdown com campos: nome, local, tipo e filhos. '
+    + 'Tipos validos: crpm, btl, cia, pel, gpm. Retorne APENAS o JSON.';
+
+  const docItem = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } };
+  const textItem = { type: 'text', text: promptText };
+  const userMessage = { role: 'user', content: [docItem, textItem] };
+  const requestBody = { model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [userMessage] };
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64Data },
-          },
-          {
-            type: 'text',
-            text: `Você é um especialista em organogramas militares da Brigada Militar do RS. Analise o PDF do organograma e extraia TODA a estrutura hierárquica completa.
-
-REGRAS:
-- Identifique os níveis: CRPM/Comando > BPM (Batalhão) > CIA (Companhia) > Pelotão > GPM
-- Para cada unidade, identifique o município/local sede
-- NÃO invente unidades que não estejam no PDF
-- GPMs são folhas — não possuem filhos
-
-Retorne APENAS um JSON puro (sem markdown, sem texto extra) seguindo a estrutura hierárquica com campos: nome, local, tipo e filhos. Tipos válidos: crpm, btl, cia, pel, gpm. GPMs não possuem filhos. Retorne APENAS o JSON.`,
-          },
-        ],
-      }),
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) throw new Error('Erro ao chamar a API de IA');
