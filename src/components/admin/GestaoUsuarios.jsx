@@ -14,6 +14,19 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { BPMs, getCias, getPelotoes, getGPMs } from '@/lib/orgData';
 
+// Converte qualquer formato de data do Firestore para string formatada
+function formatDate(value) {
+  try {
+    if (!value) return '-';
+    if (value?.toDate) return format(value.toDate(), 'dd/MM/yyyy HH:mm');
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    return format(d, 'dd/MM/yyyy HH:mm');
+  } catch {
+    return '-';
+  }
+}
+
 const PERFIS = [
   { value: 'administrador', label: 'Administrador', color: 'bg-red-100 text-red-800', desc: 'Acesso total ao sistema' },
   { value: 'comandante_crpm', label: 'Comandante CRPM', color: 'bg-purple-100 text-purple-800', desc: 'Acesso a todo CRPM/VRP' },
@@ -30,7 +43,6 @@ const PERFIS = [
 
 const emptyUser = { nome_completo: '', id_funcional: '', email: '', senha_hash: '', perfil: 'operador', bpm: '', companhia: '', pelotao: '', gpm: '', municipio: '', organization_id: '', organization_name: '', funcao: '', telefone: '', status: 'ativo', abas_permitidas: null };
 
-// Todas as abas configuráveis (exceto Creator e Administração — sempre fixas)
 const ABAS_CONFIG = [
   { path: '/', label: 'Início', icon: Home },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -74,8 +86,6 @@ function OrgSelector({ bpm, setBpm, cia, setCia, pel, setPel, gpm, setGpm, perfi
           {BPMs.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
         </SelectContent>
       </Select>
-
-      {/* Cia/Pel/GPM — ocultos para P1/P2/P3/P4 */}
       {!isFuncaoP && bpm && (
         <Select value={cia} onValueChange={v => { setCia(v); setPel(''); setGpm(''); }}>
           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Companhia (Cia)" /></SelectTrigger>
@@ -139,14 +149,14 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
   const isSavingP = PERFIS_P.includes(form.perfil);
 
   const buildOrgId = () => {
-    if (isSavingP) return `${bpm}|||`; // P: só BTL, resto vazio
+    if (isSavingP) return `${bpm}|||`;
     const g = (gpm && gpm !== '__pel__') ? gpm : '';
     const p = (pel && pel !== '__cia__') ? pel : '';
     const c = (cia && cia !== '__btl__') ? cia : '';
     return `${bpm}|${c}|${p}|${g}`;
   };
   const buildOrgName = () => {
-    if (isSavingP) return bpm || ''; // P: vincula ao BTL ou vazio (CRPM)
+    if (isSavingP) return bpm || '';
     if (gpm && gpm !== '__pel__') return gpm;
     if (pel && pel !== '__cia__') return pel;
     if (cia && cia !== '__btl__') return cia;
@@ -185,8 +195,6 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
     setSaving(false);
   };
 
-  const perfilInfo = PERFIS.find(p => p.value === form.perfil);
-
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -195,7 +203,6 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
           {editData?.id && <DialogDescription>{editData.nome_completo}</DialogDescription>}
         </DialogHeader>
         <div className="space-y-4 py-2">
-          {/* Dados pessoais */}
           <div className="space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dados Pessoais</p>
             <div>
@@ -231,7 +238,6 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
             </div>
           </div>
 
-          {/* Acesso */}
           <div className="space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dados de Acesso</p>
             <div>
@@ -255,7 +261,6 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
             </div>
           </div>
 
-          {/* Perfil */}
           <div className="space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Perfil de Acesso</p>
             <div className="grid grid-cols-1 gap-2">
@@ -271,8 +276,6 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
                 </button>
               ))}
             </div>
-
-            {/* Unidade */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-2">Unidade Vinculada</p>
               <OrgSelector bpm={bpm} setBpm={setBpm} cia={cia} setCia={setCia} pel={pel} setPel={setPel} gpm={gpm} setGpm={setGpm} perfil={form.perfil} />
@@ -280,19 +283,15 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
           </div>
         </div>
 
-        {/* Abas permitidas */}
         <div className="space-y-3 border-t border-border pt-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Abas do Menu</p>
-            <button
-              type="button"
+            <button type="button"
               onClick={() => { setUseCustomAbas(v => !v); if (!useCustomAbas) setAbasSel(ABAS_CONFIG.map(a => a.path)); }}
-              className={`text-xs px-2 py-1 rounded-md border transition-colors ${useCustomAbas ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/40'}`}
-            >
+              className={`text-xs px-2 py-1 rounded-md border transition-colors ${useCustomAbas ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/40'}`}>
               {useCustomAbas ? 'Personalizado' : 'Padrão do perfil'}
             </button>
           </div>
-
           {!useCustomAbas ? (
             <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
               O usuário verá as abas conforme definido pelo perfil selecionado. Ative "Personalizado" para controlar individualmente.
@@ -300,22 +299,17 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
           ) : (
             <div className="space-y-1.5">
               <div className="flex gap-2 mb-2">
-                <button type="button" onClick={() => setAbasSel(ABAS_CONFIG.map(a => a.path))}
-                  className="text-xs text-primary hover:underline">Selecionar todas</button>
+                <button type="button" onClick={() => setAbasSel(ABAS_CONFIG.map(a => a.path))} className="text-xs text-primary hover:underline">Selecionar todas</button>
                 <span className="text-muted-foreground text-xs">·</span>
-                <button type="button" onClick={() => setAbasSel([])}
-                  className="text-xs text-muted-foreground hover:underline">Limpar</button>
+                <button type="button" onClick={() => setAbasSel([])} className="text-xs text-muted-foreground hover:underline">Limpar</button>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {ABAS_CONFIG.map(aba => {
                   const sel = abasSel.includes(aba.path);
                   return (
-                    <button
-                      key={aba.path}
-                      type="button"
+                    <button key={aba.path} type="button"
                       onClick={() => setAbasSel(prev => sel ? prev.filter(p => p !== aba.path) : [...prev, aba.path])}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-left transition-colors ${sel ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/30'}`}
-                    >
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-left transition-colors ${sel ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-border text-muted-foreground hover:border-primary/30'}`}>
                       <aba.icon className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>{aba.label}</span>
                       {sel && <Check className="w-3 h-3 ml-auto flex-shrink-0" />}
@@ -323,9 +317,7 @@ function UserFormDialog({ open, onClose, editData, onSaved }) {
                   );
                 })}
               </div>
-              {abasSel.length === 0 && (
-                <p className="text-xs text-destructive/80">Nenhuma aba selecionada — o usuário não verá nenhum item no menu.</p>
-              )}
+              {abasSel.length === 0 && <p className="text-xs text-destructive/80">Nenhuma aba selecionada — o usuário não verá nenhum item no menu.</p>}
             </div>
           )}
         </div>
@@ -380,10 +372,9 @@ function AccessRequestsTab({ highlightId }) {
   const [obs, setObs] = useState({});
   const [showSenha, setShowSenha] = useState({});
   const [saving, setSaving] = useState({});
-  const [editingId, setEditingId] = useState(null); // reabre pendente para editar decisão
   const [deletingReqId, setDeletingReqId] = useState(null);
+  const [confirmDeleteReqId, setConfirmDeleteReqId] = useState(null);
 
-  // Pré-preenche senha padrão ao carregar
   React.useEffect(() => {
     const map = {};
     requests.filter(r => r.status === 'pendente').forEach(r => {
@@ -392,7 +383,6 @@ function AccessRequestsTab({ highlightId }) {
     if (Object.keys(map).length) setSenhas(prev => ({ ...prev, ...map }));
   }, [requests]);
 
-  // Scroll para a solicitação destacada
   React.useEffect(() => {
     if (highlightId) {
       setTimeout(() => {
@@ -402,13 +392,10 @@ function AccessRequestsTab({ highlightId }) {
     }
   }, [highlightId, requests]);
 
-  // Infere perfil e unidade a partir da solicitação
   const inferirPerfilEUnidade = (req) => {
     const funcao = (req.funcao || '').toLowerCase().trim();
     const unidade = (req.unidade_lotacao || '');
     const isFuncaoP = ['p1', 'p2', 'p3', 'p4'].includes(funcao);
-
-    // Inferência de perfil pela função
     let perfil = 'operador';
     if (funcao.includes('comandante') && funcao.includes('crpm')) perfil = 'comandante_crpm';
     else if (funcao.includes('comandante') && funcao.includes('batalh')) perfil = 'comandante_btl';
@@ -419,34 +406,21 @@ function AccessRequestsTab({ highlightId }) {
     else if (funcao === 'p2') perfil = 'p2';
     else if (funcao === 'p3') perfil = 'p3';
     else if (funcao === 'p4') perfil = 'p4';
-
-    // Extrai unidade da string de lotação (ex: "23º BPM / 1ª Cia / 2º Pel / GPM-X")
     let bpm = '', companhia = '', pelotao = '', gpm = '', municipio = '';
     const bpmMatch = unidade.match(/(\d+[ºª°]?\s*BPM)/i);
     if (bpmMatch) bpm = bpmMatch[1].trim();
-
-    // Para P1/P2/P3/P4: só extrai BTL — sem Cia/Pel/GPM
     if (!isFuncaoP) {
       const ciaMatch = unidade.match(/(\d+[ºª°]?\s*Cia)/i);
       if (ciaMatch) companhia = ciaMatch[1].trim();
       const pelMatch = unidade.match(/(\d+[ºª°]?\s*Pel(?:ot[ãa]o)?)/i);
       if (pelMatch) pelotao = pelMatch[1].trim();
-      // GPM: suporta "GPM-X", "GPM X", "1º GPM", "2º GPM" etc.
       const gpmMatchDash = unidade.match(/GPM[-\s](\S+)/i);
       const gpmMatchOrd  = unidade.match(/(\d+[ºª°]?\s*GPM)/i);
-      if (gpmMatchDash) {
-        gpm = `GPM-${gpmMatchDash[1]}`;
-      } else if (gpmMatchOrd) {
-        gpm = gpmMatchOrd[1].trim();
-      }
+      if (gpmMatchDash) gpm = `GPM-${gpmMatchDash[1]}`;
+      else if (gpmMatchOrd) gpm = gpmMatchOrd[1].trim();
     }
-
     const organization_id = `${bpm}|${companhia}|${pelotao}|${gpm}`;
-    // organization_name = unidade mais específica disponível (GPM > Pelotão > Cia > BPM)
-    const organization_name = isFuncaoP
-      ? (bpm || '')
-      : (gpm || pelotao || companhia || bpm || unidade);
-
+    const organization_name = isFuncaoP ? (bpm || '') : (gpm || pelotao || companhia || bpm || unidade);
     return { perfil, bpm, companhia, pelotao, gpm, municipio, organization_id, organization_name };
   };
 
@@ -454,7 +428,6 @@ function AccessRequestsTab({ highlightId }) {
     const senha = senhas[req.id] || SENHA_PADRAO;
     setSaving(s => ({ ...s, [req.id]: true }));
     const { perfil, bpm, companhia, pelotao, gpm, organization_id, organization_name } = inferirPerfilEUnidade(req);
-    // Atualiza/cria o usuário no AppUser com a senha gerada e unidade inferida
     const existing = await base44.entities.AppUser.filter({ id_funcional: req.id_funcional }, '-created_date', 1);
     if (existing && existing.length > 0) {
       await base44.entities.AppUser.update(existing[0].id, {
@@ -464,16 +437,10 @@ function AccessRequestsTab({ highlightId }) {
       });
     } else {
       await base44.entities.AppUser.create({
-        nome_completo: req.nome_completo,
-        id_funcional: req.id_funcional,
-        email: req.email,
-        telefone: req.telefone,
-        funcao: req.funcao,
-        senha_hash: senha,
-        perfil,
-        bpm, companhia, pelotao, gpm,
-        organization_id, organization_name,
-        status: 'ativo',
+        nome_completo: req.nome_completo, id_funcional: req.id_funcional,
+        email: req.email, telefone: req.telefone, funcao: req.funcao,
+        senha_hash: senha, perfil, bpm, companhia, pelotao, gpm,
+        organization_id, organization_name, status: 'ativo',
       });
     }
     await base44.entities.AccessRequest.update(req.id, { status: 'aprovado', observacao_admin: obs[req.id] || `Senha: ${senha} | Perfil: ${perfil} | Unidade: ${organization_name}` });
@@ -500,8 +467,6 @@ function AccessRequestsTab({ highlightId }) {
     setSaving(s => ({ ...s, [req.id]: false }));
     toast.success('Solicitação reaberta para nova decisão');
   };
-
-  const [confirmDeleteReqId, setConfirmDeleteReqId] = useState(null);
 
   const handleDeleteReq = async (req) => {
     if (confirmDeleteReqId !== req.id) { setConfirmDeleteReqId(req.id); return; }
@@ -530,11 +495,8 @@ function AccessRequestsTab({ highlightId }) {
           {pendentes.map(r => {
             const isHighlight = r.id === highlightId;
             return (
-              <div
-                key={r.id}
-                id={`req-${r.id}`}
-                className={`rounded-lg border p-4 space-y-3 transition-all ${isHighlight ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-amber-200 bg-amber-50'}`}
-              >
+              <div key={r.id} id={`req-${r.id}`}
+                className={`rounded-lg border p-4 space-y-3 transition-all ${isHighlight ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-amber-200 bg-amber-50'}`}>
                 {isHighlight && (
                   <div className="flex items-center gap-1.5 text-xs text-primary font-bold">
                     <AlertCircle className="w-3.5 h-3.5" /> Solicitação recebida via WhatsApp
@@ -557,74 +519,54 @@ function AccessRequestsTab({ highlightId }) {
                     <span className="text-muted-foreground">Tipo:</span>
                     <Badge variant="outline" className="text-xs">{r.tipo === 'novo_acesso' ? 'Novo Acesso' : 'Recuperar Senha'}</Badge>
                   </div>
-                  <div className="text-muted-foreground text-[10px] col-span-2">{r.created_date ? format(new Date(r.created_date), 'dd/MM/yyyy HH:mm') : '-'}</div>
+                  {/* ── Data corrigida com formatDate ── */}
+                  <div className="text-muted-foreground text-[10px] col-span-2">{formatDate(r.created_date)}</div>
                 </div>
 
-                {/* Preview perfil/unidade inferido */}
                 {(() => {
                   const inf = inferirPerfilEUnidade(r);
                   const perfilInfo = PERFIS.find(p => p.value === inf.perfil);
-                  const unidadeLabel = inf.bpm
-                    ? inf.bpm
-                    : 'CRPM/VRP (Sede)';
                   return (
                     <div className="rounded-md bg-blue-50 border border-blue-200 p-3 space-y-1">
                       <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider">Acesso que será concedido</p>
                       <div className="flex flex-wrap gap-2 mt-1">
-                        <Badge className={`text-xs ${perfilInfo?.color || 'bg-secondary'}`} variant="secondary">
-                          {perfilInfo?.label || inf.perfil}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">{unidadeLabel}</Badge>
+                        <Badge className={`text-xs ${perfilInfo?.color || 'bg-secondary'}`} variant="secondary">{perfilInfo?.label || inf.perfil}</Badge>
+                        <Badge variant="outline" className="text-xs">{inf.bpm || 'CRPM/VRP (Sede)'}</Badge>
                       </div>
                       <p className="text-[10px] text-blue-700">Inferido a partir da função "<strong>{r.funcao}</strong>" e unidade "<strong>{r.unidade_lotacao}</strong>". Pode ser ajustado após aprovação em Gestão de Usuários.</p>
                     </div>
                   );
                 })()}
 
-                {/* Senha a conceder */}
                 <div className="rounded-md bg-white border border-border p-3 space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Senha a Conceder</p>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <input
-                        type={showSenha[r.id] ? 'text' : 'password'}
-                        value={senhas[r.id] || SENHA_PADRAO}
+                      <input type={showSenha[r.id] ? 'text' : 'password'} value={senhas[r.id] || SENHA_PADRAO}
                         onChange={e => setSenhas(s => ({ ...s, [r.id]: e.target.value }))}
-                        className="w-full h-8 px-3 pr-9 text-sm font-mono border border-input rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
+                        className="w-full h-8 px-3 pr-9 text-sm font-mono border border-input rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring" />
                       <button type="button" onClick={() => setShowSenha(s => ({ ...s, [r.id]: !s[r.id] }))}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showSenha[r.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setSenhas(s => ({ ...s, [r.id]: SENHA_PADRAO }))}>
-                      Padrão
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" title="Limpar senha"
-                      onClick={() => setSenhas(s => ({ ...s, [r.id]: '' }))}>
-                      <Eraser className="w-3.5 h-3.5" />
-                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setSenhas(s => ({ ...s, [r.id]: SENHA_PADRAO }))}>Padrão</Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setSenhas(s => ({ ...s, [r.id]: '' }))}><Eraser className="w-3.5 h-3.5" /></Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Senha padrão: "<strong>{SENHA_PADRAO}</strong>" — pode ser alterada antes do envio. O usuário poderá mudar no primeiro acesso.</p>
+                  <p className="text-[10px] text-muted-foreground">Senha padrão: "<strong>{SENHA_PADRAO}</strong>" — pode ser alterada antes do envio.</p>
                 </div>
 
-                {/* Observação */}
                 <div className="flex gap-1.5">
-                  <input
-                    value={obs[r.id] || ''}
-                    onChange={e => setObs(o => ({ ...o, [r.id]: e.target.value }))}
+                  <input value={obs[r.id] || ''} onChange={e => setObs(o => ({ ...o, [r.id]: e.target.value }))}
                     placeholder="Observação para o solicitante (opcional)"
-                    className="flex-1 h-8 px-3 text-xs border border-input rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
+                    className="flex-1 h-8 px-3 text-xs border border-input rounded-md bg-transparent focus:outline-none focus:ring-1 focus:ring-ring" />
                   {obs[r.id] && (
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" title="Limpar observação"
-                      onClick={() => setObs(o => ({ ...o, [r.id]: '' }))}>
-                      <Eraser className="w-3.5 h-3.5" />
-                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setObs(o => ({ ...o, [r.id]: '' }))}><Eraser className="w-3.5 h-3.5" /></Button>
                   )}
                 </div>
 
-                {/* Ações */}
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" className="h-8 text-xs gap-1 flex-1 min-w-[160px] bg-green-700 hover:bg-green-800" onClick={() => handleAprovar(r)} disabled={saving[r.id]}>
                     {saving[r.id] ? '...' : <><Check className="w-3.5 h-3.5" /> Aprovar e Enviar via WhatsApp</>}
@@ -661,9 +603,7 @@ function AccessRequestsTab({ highlightId }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium">{r.nome_completo}</p>
-                    <Badge variant={r.status === 'aprovado' ? 'default' : 'destructive'} className="text-xs">
-                      {r.status}
-                    </Badge>
+                    <Badge variant={r.status === 'aprovado' ? 'default' : 'destructive'} className="text-xs">{r.status}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground font-mono mt-0.5">{r.id_funcional} · {r.funcao}</p>
                   <p className="text-xs text-muted-foreground truncate">{r.unidade_lotacao}</p>

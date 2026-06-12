@@ -14,6 +14,19 @@ import SolicitacoesEdicao from '@/components/admin/SolicitacoesEdicao';
 import BackupRestore from '@/components/admin/BackupRestore';
 import GerenciarAvisos from '@/components/admin/GerenciarAvisos';
 
+// Converte qualquer formato de data do Firestore para string formatada
+function formatDate(value) {
+  try {
+    if (!value) return '-';
+    if (value?.toDate) return format(value.toDate(), 'dd/MM/yyyy HH:mm');
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '-';
+    return format(d, 'dd/MM/yyyy HH:mm');
+  } catch {
+    return '-';
+  }
+}
+
 export default function Admin() {
   const { appUser } = useOutletContext();
 
@@ -31,7 +44,6 @@ export default function Admin() {
 
   const [searchLog, setSearchLog] = useState('');
 
-  // Detecta parâmetros de URL para abertura direta da solicitação
   const urlParams = new URLSearchParams(window.location.search);
   const urlTab = urlParams.get('tab');
   const urlReqId = urlParams.get('req');
@@ -44,7 +56,6 @@ export default function Admin() {
     return !term || (l.usuario || '').toLowerCase().includes(term) || (l.detalhe || '').toLowerCase().includes(term);
   });
 
-  // Protege a página: apenas administradores têm acesso
   if (appUser && appUser.perfil !== 'administrador') {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
@@ -79,32 +90,26 @@ export default function Admin() {
           <TabsTrigger value="avisos"><BellRing className="w-4 h-4 mr-1.5" /> Avisos</TabsTrigger>
         </TabsList>
 
-        {/* Gestão de usuários do sistema */}
         <TabsContent value="gestao" className="mt-4">
           <GestaoUsuarios highlightRequestId={urlReqId} openRequestsTab={urlTab === 'requests'} />
         </TabsContent>
 
-        {/* Liberações de edição */}
         <TabsContent value="edicoes" className="mt-4">
           <SolicitacoesEdicao />
         </TabsContent>
 
-        {/* Configurações tab */}
         <TabsContent value="config" className="mt-4">
           <ConfiguracoesSistema />
         </TabsContent>
 
-        {/* Backup / Restore tab */}
         <TabsContent value="backup" className="mt-4">
           <BackupRestore />
         </TabsContent>
 
-        {/* Avisos tab */}
         <TabsContent value="avisos" className="mt-4">
           <GerenciarAvisos appUser={appUser} />
         </TabsContent>
 
-        {/* Logs tab */}
         <TabsContent value="logs" className="mt-4 space-y-4">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -126,13 +131,7 @@ export default function Admin() {
                   {filteredLogs.map(log => (
                     <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {(() => {
-  try {
-    return log.created_date ? format(new Date(log.created_date), 'dd/MM/yyyy HH:mm') : '-';
-  } catch {
-    return '-';
-  }
-})()}
+                        {formatDate(log.created_date)}
                       </td>
                       <td className="px-4 py-3 text-xs">{log.usuario}</td>
                       <td className="px-4 py-3">

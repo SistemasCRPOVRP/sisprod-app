@@ -7,7 +7,7 @@ import {
   ArrowRight, Loader2, FileText, X, ChevronDown, ChevronRight,
   Building2, Users, User, Shield
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { uploadFile } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 // ── Identifica o tipo da linha pelo padrão textual ──────────────────────────
@@ -21,13 +21,11 @@ function detectTipo(texto) {
   return null;
 }
 
-// ── Extrai município/local da linha (texto após traço, vírgula ou parêntese) ─
 function extrairLocal(texto) {
   const m = texto.match(/[-–—]\s*(.+)$/) || texto.match(/\(([^)]+)\)$/);
   return m ? m[1].trim() : '';
 }
 
-// ── Normaliza o nome da unidade removendo município embutido ─────────────────
 function normalizarNome(texto) {
   return texto
     .replace(/[-–—]\s*.+$/, '')
@@ -35,15 +33,10 @@ function normalizarNome(texto) {
     .trim();
 }
 
-// ── Interpreta o texto extraído do PDF e monta árvore hierárquica ───────────
 function interpretarTexto(texto) {
   const linhas = texto.split('\n').map(l => l.trimEnd()).filter(l => l.trim());
-
-  // Encontra a raiz (CRPM)
   const raizIdx = linhas.findIndex(l => detectTipo(l) === 'crpm');
   const inicio = raizIdx >= 0 ? raizIdx : 0;
-
-  // Calcula indentação de cada linha
   const itens = linhas.slice(inicio).map(linha => {
     const tipo = detectTipo(linha);
     if (!tipo) return null;
@@ -52,33 +45,23 @@ function interpretarTexto(texto) {
     const local = extrairLocal(linha);
     return { tipo, nome, local, indent };
   }).filter(Boolean);
-
   if (itens.length === 0) return null;
-
-  // Monta árvore usando pilha de pais
   const raiz = { ...itens[0], filhos: [] };
   const pilha = [{ node: raiz, indent: itens[0].indent }];
-
   for (let i = 1; i < itens.length; i++) {
     const item = itens[i];
-    // Remove da pilha nós com indentação >= atual
-    while (pilha.length > 1 && pilha[pilha.length - 1].indent >= item.indent) {
-      pilha.pop();
-    }
+    while (pilha.length > 1 && pilha[pilha.length - 1].indent >= item.indent) pilha.pop();
     const pai = pilha[pilha.length - 1].node;
     if (!pai.filhos) pai.filhos = [];
     const novoNo = { tipo: item.tipo, nome: item.nome, local: item.local, filhos: item.tipo !== 'gpm' ? [] : undefined };
     pai.filhos.push(novoNo);
     if (item.tipo !== 'gpm') pilha.push({ node: novoNo, indent: item.indent });
   }
-
   return raiz;
 }
 
-// ── Compara dois organogramas e retorna diff ─────────────────────────────────
 function calcDiff(atual, novo) {
   const diff = { adicionados: [], alterados: [], removidos: [] };
-
   function mapNodes(node, path = []) {
     const m = new Map();
     m.set(path.join('|') || 'root', { nome: node.nome, local: node.local, tipo: node.tipo });
@@ -87,29 +70,19 @@ function calcDiff(atual, novo) {
     });
     return m;
   }
-
   const atualMap = mapNodes(atual);
   const novoMap = mapNodes(novo);
-
   novoMap.forEach((v, k) => {
-    if (!atualMap.has(k)) {
-      diff.adicionados.push({ path: k, ...v });
-    } else {
+    if (!atualMap.has(k)) diff.adicionados.push({ path: k, ...v });
+    else {
       const a = atualMap.get(k);
-      if (a.local !== v.local || a.tipo !== v.tipo) {
-        diff.alterados.push({ path: k, de: a, para: v });
-      }
+      if (a.local !== v.local || a.tipo !== v.tipo) diff.alterados.push({ path: k, de: a, para: v });
     }
   });
-
-  atualMap.forEach((v, k) => {
-    if (!novoMap.has(k)) diff.removidos.push({ path: k, ...v });
-  });
-
+  atualMap.forEach((v, k) => { if (!novoMap.has(k)) diff.removidos.push({ path: k, ...v }); });
   return diff;
 }
 
-// ── Componente de preview da árvore ─────────────────────────────────────────
 function PreviewNode({ node, depth = 0 }) {
   const [open, setOpen] = useState(depth < 2);
   const hasFilhos = node.filhos && node.filhos.length > 0;
@@ -120,69 +93,56 @@ function PreviewNode({ node, depth = 0 }) {
     pel:  <Users className="w-3 h-3 text-blue-500 flex-shrink-0" />,
     gpm:  <User className="w-2.5 h-2.5 text-gray-500 flex-shrink-0" />,
   };
-
   return (
     <div className={depth > 0 ? 'ml-4 border-l border-border/40 pl-2' : ''}>
-      <div
-        className="flex items-center gap-1.5 py-0.5 cursor-pointer group"
-        onClick={() => hasFilhos && setOpen(o => !o)}
-      >
-        {hasFilhos ? (
-          open ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />
-        ) : (
-          <span className="w-3" />
-        )}
+      <div className="flex items-center gap-1.5 py-0.5 cursor-pointer group" onClick={() => hasFilhos && setOpen(o => !o)}>
+        {hasFilhos ? (open ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />) : <span className="w-3" />}
         {icons[node.tipo] || icons.gpm}
         <span className="text-xs font-medium">{node.nome}</span>
         {node.local && <span className="text-[10px] text-muted-foreground">· {node.local}</span>}
-        {hasFilhos && (
-          <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100">
-            ({node.filhos.length})
-          </span>
-        )}
+        {hasFilhos && <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100">({node.filhos.length})</span>}
       </div>
-      {open && hasFilhos && node.filhos.map((f, i) => (
-        <PreviewNode key={`${f.nome}-${i}`} node={f} depth={depth + 1} />
-      ))}
+      {open && hasFilhos && node.filhos.map((f, i) => <PreviewNode key={`${f.nome}-${i}`} node={f} depth={depth + 1} />)}
     </div>
   );
 }
 
-// ── Componente principal ─────────────────────────────────────────────────────
-export default function AtualizarOrganogramaDialog({ open, onClose, pdfUrl, organogramaAtual, onConfirmar }) {
-  const [etapa, setEtapa] = useState('idle'); // idle | processando | preview | confirmando
-  const [progresso, setProgresso] = useState('');
-  const [novoOrganograma, setNovoOrganograma] = useState(null);
-  const [diff, setDiff] = useState(null);
-  const [erroMsg, setErroMsg] = useState('');
-  const fileRef = useRef(null);
+// ── Converte arquivo PDF para base64 ────────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
-  const iniciarProcessamento = async (pdfParaProcessar) => {
-    setEtapa('processando');
-    setErroMsg('');
-    setNovoOrganograma(null);
-    setDiff(null);
+// ── Chama a API da Anthropic diretamente com o PDF em base64 ────────────────
+async function invocarLLMComPDF(base64Data) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64Data },
+          },
+          {
+            type: 'text',
+            text: `Você é um especialista em organogramas militares da Brigada Militar do RS. Analise o PDF do organograma e extraia TODA a estrutura hierárquica completa.
 
-    try {
-      setProgresso('Lendo organograma...');
-      await sleep(400);
-
-      setProgresso('Analisando estrutura hierárquica com IA...');
-
-      // Solicita à IA que interprete o PDF e retorne a hierarquia
-      const resultado = await base44.integrations.Core.InvokeLLM({
-        model: 'claude_sonnet_4_6',
-        prompt: `Você é um especialista em organogramas militares da Brigada Militar do RS. Analise CUIDADOSAMENTE o PDF do organograma anexado e extraia TODA a estrutura hierárquica completa.
-
-REGRAS IMPORTANTES:
-- Leia TODOS os elementos do organograma, sem omitir nenhum
-- Identifique corretamente os níveis: CRPM/Comando > BPM (Batalhão) > CIA (Companhia) > Pelotão > GPM
+REGRAS:
+- Identifique os níveis: CRPM/Comando > BPM (Batalhão) > CIA (Companhia) > Pelotão > GPM
 - Para cada unidade, identifique o município/local sede
 - NÃO invente unidades que não estejam no PDF
-- NÃO omita unidades presentes no PDF
-- Mantenha a hierarquia exata conforme o organograma oficial
+- GPMs são folhas — não possuem filhos
 
-Retorne um JSON com a estrutura exata seguindo EXATAMENTE este formato (sem markdown, sem texto extra):
+Retorne APENAS um JSON puro (sem markdown, sem texto extra) com este formato:
 {
   "nome": "CRPM/VRP — Comando",
   "local": "Santa Cruz do Sul",
@@ -213,35 +173,57 @@ Retorne um JSON com a estrutura exata seguindo EXATAMENTE este formato (sem mark
   ]
 }
 
-Tipos válidos OBRIGATÓRIOS: "crpm", "btl", "cia", "pel", "gpm"
-GPMs são folhas — não possuem filhos.
-Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
-        file_urls: [pdfParaProcessar],
-      });
+Tipos válidos: "crpm", "btl", "cia", "pel", "gpm". Retorne APENAS o JSON.`,
+          },
+        ],
+      }),
+    }),
+  });
+
+  if (!response.ok) throw new Error('Erro ao chamar a API de IA');
+  const data = await response.json();
+  const texto = data.content?.find(c => c.type === 'text')?.text || '';
+  return texto.replace(/```json|```/g, '').trim();
+}
+
+export default function AtualizarOrganogramaDialog({ open, onClose, pdfUrl, organogramaAtual, onConfirmar }) {
+  const [etapa, setEtapa] = useState('idle');
+  const [progresso, setProgresso] = useState('');
+  const [novoOrganograma, setNovoOrganograma] = useState(null);
+  const [diff, setDiff] = useState(null);
+  const [erroMsg, setErroMsg] = useState('');
+  const fileRef = useRef(null);
+  const [pdfBase64, setPdfBase64] = useState(null);
+
+  const iniciarProcessamento = async (base64Data) => {
+    setEtapa('processando');
+    setErroMsg('');
+    setNovoOrganograma(null);
+    setDiff(null);
+
+    try {
+      setProgresso('Analisando estrutura hierárquica com IA...');
+
+      const jsonStr = await invocarLLMComPDF(base64Data);
 
       setProgresso('Processando hierarquia...');
       await sleep(300);
 
-      // resultado é string — faz parse do JSON
       let novoOrg;
       try {
-        const jsonStr = typeof resultado === 'string'
-          ? resultado.replace(/```json|```/g, '').trim()
-          : JSON.stringify(resultado);
         novoOrg = JSON.parse(jsonStr);
       } catch {
         throw new Error('A IA não retornou um JSON válido. Tente novamente.');
       }
 
       if (!novoOrg || !novoOrg.nome) {
-        throw new Error('Não foi possível interpretar a estrutura do PDF. Verifique se o arquivo contém o organograma completo.');
+        throw new Error('Não foi possível interpretar a estrutura do PDF.');
       }
 
       setProgresso('Calculando diferenças...');
       await sleep(300);
 
       const diffCalc = calcDiff(organogramaAtual, novoOrg);
-
       setNovoOrganograma(novoOrg);
       setDiff(diffCalc);
       setProgresso('');
@@ -253,24 +235,34 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
     }
   };
 
-  const processarPdfAtual = () => {
-    if (!pdfUrl) {
-      toast.error('Nenhum PDF carregado. Envie o organograma primeiro na aba "Ver PDF".');
+  const processarPdfAtual = async () => {
+    if (!pdfBase64) {
+      toast.error('Nenhum PDF em memória. Envie um novo PDF pelo botão abaixo.');
       return;
     }
-    iniciarProcessamento(pdfUrl);
+    await iniciarProcessamento(pdfBase64);
   };
 
   const processarNovoPdf = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setEtapa('processando');
-    setProgresso('Enviando PDF...');
+    setProgresso('Lendo PDF...');
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await iniciarProcessamento(file_url);
+      // Converte para base64 para enviar à API da Anthropic
+      const base64 = await fileToBase64(file);
+      setPdfBase64(base64);
+
+      // Também faz upload no Cloudinary para salvar a URL no sistema
+      try {
+        await uploadFile(file);
+      } catch {
+        // Upload para Cloudinary é opcional — não bloqueia o processamento
+      }
+
+      await iniciarProcessamento(base64);
     } catch {
-      setErroMsg('Erro ao enviar o PDF.');
+      setErroMsg('Erro ao ler o PDF.');
       setEtapa('idle');
     }
   };
@@ -314,7 +306,6 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
                   {erroMsg}
                 </div>
               )}
-
               <div className="bg-muted/40 border border-border rounded-xl p-5 space-y-3">
                 <p className="text-sm font-semibold">Como funciona</p>
                 <ul className="text-sm text-muted-foreground space-y-1.5 list-none">
@@ -324,24 +315,15 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
                   <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" /> Unidades removidas são marcadas como inativas</li>
                 </ul>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={processarPdfAtual}
-                  disabled={!pdfUrl}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all text-center ${
-                    pdfUrl ? 'border-primary/40 hover:border-primary hover:bg-primary/5 cursor-pointer' : 'border-border opacity-50 cursor-not-allowed'
-                  }`}
-                >
+                <button onClick={processarPdfAtual} disabled={!pdfBase64}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all text-center ${pdfBase64 ? 'border-primary/40 hover:border-primary hover:bg-primary/5 cursor-pointer' : 'border-border opacity-50 cursor-not-allowed'}`}>
                   <FileText className="w-8 h-8 text-primary" />
                   <div>
-                    <p className="font-semibold text-sm">Usar PDF atual do sistema</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {pdfUrl ? 'Organograma já carregado' : 'Nenhum PDF carregado'}
-                    </p>
+                    <p className="font-semibold text-sm">Usar PDF já carregado</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{pdfBase64 ? 'PDF disponível na sessão' : 'Nenhum PDF carregado'}</p>
                   </div>
                 </button>
-
                 <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-primary/40 hover:border-primary hover:bg-primary/5 p-6 transition-all cursor-pointer text-center">
                   <Upload className="w-8 h-8 text-primary" />
                   <div>
@@ -374,7 +356,6 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
           {/* ── PREVIEW ── */}
           {etapa === 'preview' && novoOrganograma && diff && (
             <div className="space-y-4">
-              {/* Resumo do diff */}
               <div className="grid grid-cols-3 gap-3">
                 <div className={`rounded-lg border p-3 text-center ${diff.adicionados.length > 0 ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-border'}`}>
                   <Plus className={`w-4 h-4 mx-auto mb-1 ${diff.adicionados.length > 0 ? 'text-green-600' : 'text-muted-foreground'}`} />
@@ -400,7 +381,6 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
                 </div>
               )}
 
-              {/* Detalhes do diff */}
               {diff.adicionados.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-green-700 flex items-center gap-1"><Plus className="w-3 h-3" /> Unidades novas</p>
@@ -429,7 +409,7 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
 
               {diff.removidos.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-red-600 flex items-center gap-1"><Minus className="w-3 h-3" /> Unidades a remover (serão marcadas como inativas)</p>
+                  <p className="text-xs font-semibold text-red-600 flex items-center gap-1"><Minus className="w-3 h-3" /> Unidades a remover</p>
                   {diff.removidos.map((u, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs bg-red-50 border border-red-100 rounded px-2.5 py-1.5">
                       <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 border-red-200">{u.tipo?.toUpperCase()}</Badge>
@@ -440,7 +420,6 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
                 </div>
               )}
 
-              {/* Nova árvore */}
               <div className="border border-border rounded-xl overflow-hidden">
                 <div className="px-4 py-2 bg-muted/40 border-b border-border flex items-center justify-between">
                   <p className="text-xs font-semibold">Nova estrutura hierárquica</p>
@@ -453,11 +432,7 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
 
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>
-                  <strong>Atenção:</strong> Esta ação atualizará o organograma exibido no sistema.
-                  Pontuações, históricos e grupos concorrentes não serão afetados.
-                  Unidades removidas serão marcadas como inativas.
-                </p>
+                <p><strong>Atenção:</strong> Esta ação atualizará o organograma. Pontuações e históricos não serão afetados.</p>
               </div>
             </div>
           )}
@@ -472,23 +447,16 @@ Retorne APENAS o JSON puro, sem qualquer texto antes ou depois.`,
         </div>
 
         <DialogFooter className="flex-shrink-0 border-t border-border pt-3">
-          {etapa === 'idle' && (
-            <Button variant="outline" onClick={fechar}>Fechar</Button>
-          )}
+          {etapa === 'idle' && <Button variant="outline" onClick={fechar}>Fechar</Button>}
           {etapa === 'preview' && (
             <>
-              <Button variant="outline" onClick={() => setEtapa('idle')}>
-                <X className="w-4 h-4 mr-1" /> Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setEtapa('idle')}><X className="w-4 h-4 mr-1" /> Cancelar</Button>
               {totalMudancas > 0 && (
                 <Button onClick={confirmar} className="gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Confirmar Atualização
+                  <CheckCircle2 className="w-4 h-4" /> Confirmar Atualização
                 </Button>
               )}
-              {totalMudancas === 0 && (
-                <Button variant="outline" onClick={fechar}>Fechar</Button>
-              )}
+              {totalMudancas === 0 && <Button variant="outline" onClick={fechar}>Fechar</Button>}
             </>
           )}
         </DialogFooter>
