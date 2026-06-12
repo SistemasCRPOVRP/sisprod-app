@@ -452,7 +452,8 @@ export default function Lancamento() {
     setSaving(true);
     let anexo_url = '';
     if (file) {
-      const upload = await base44.integrations.Core.UploadFile({ file });
+      const { uploadFile } = await import('@/api/base44Client');
+      const upload = await uploadFile(file);
       anexo_url = upload.file_url;
     }
 

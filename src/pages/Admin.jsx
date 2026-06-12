@@ -126,7 +126,13 @@ export default function Admin() {
                   {filteredLogs.map(log => (
                     <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {log.created_date ? format(new Date(log.created_date), 'dd/MM/yyyy HH:mm') : '-'}
+                        {(() => {
+  try {
+    return log.created_date ? format(new Date(log.created_date), 'dd/MM/yyyy HH:mm') : '-';
+  } catch {
+    return '-';
+  }
+})()}
                       </td>
                       <td className="px-4 py-3 text-xs">{log.usuario}</td>
                       <td className="px-4 py-3">
