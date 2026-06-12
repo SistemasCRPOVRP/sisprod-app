@@ -117,7 +117,8 @@ export default function Unidades() {
     if (!file) return;
     setUploadingPdf(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { uploadFile } = await import('@/api/base44Client');
+      const { file_url } = await uploadFile(file);
       setPdfUrl(file_url);
       toast.success('PDF atualizado com sucesso!');
     } catch {
