@@ -129,7 +129,50 @@ export default function BackupRestore() {
     setExporting(false);
     toast.success(`Backup exportado: ${filename}`);
   };
-
+{/* CORRIGIR INDICATOR_IDs */}
+<div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-3">
+  <div className="flex items-center gap-2">
+    <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
+      <RefreshCw className="w-5 h-5 text-amber-700" />
+    </div>
+    <div>
+      <p className="font-semibold text-sm">Corrigir Vínculos de Indicadores</p>
+      <p className="text-xs text-muted-foreground">Atualiza indicator_id nos registros de produção</p>
+    </div>
+  </div>
+  <Button
+    onClick={async () => {
+      toast.info('Iniciando correção...');
+      const [prods, inds] = await Promise.all([
+        base44.entities.Production.list(),
+        base44.entities.Indicator.list(),
+      ]);
+      const indMap = {};
+      inds.forEach(i => { indMap[i.nome?.toLowerCase().trim()] = i; });
+      let corrigidos = 0;
+      for (const p of prods) {
+        const indAtual = inds.find(i => i.id === p.indicator_id);
+        if (!indAtual && p.indicator_name) {
+          const match = indMap[p.indicator_name?.toLowerCase().trim()];
+          if (match) {
+            await base44.entities.Production.update(p.id, {
+              indicator_id: match.id,
+              categoria: match.categoria,
+              peso: match.peso,
+            });
+            corrigidos++;
+          }
+        }
+      }
+      toast.success(`Correção concluída! ${corrigidos} registros atualizados.`);
+    }}
+    variant="outline"
+    className="w-full gap-2 border-amber-400 text-amber-700 hover:bg-amber-100"
+  >
+    <RefreshCw className="w-4 h-4" />
+    Corrigir Vínculos de Indicadores
+  </Button>
+</div>
   // ─── IMPORTAÇÃO ───────────────────────────────────────────────
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
