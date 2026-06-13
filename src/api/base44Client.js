@@ -124,8 +124,7 @@ function createEntity(entityName) {
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     },
 
-    async list(sort, limitValue = 9999) {
-  // Se limitValue for alto (backup), busca tudo com paginação automática
+   async list(sort, limitValue = null) {
   const BATCH = 1000;
   const allDocs = [];
   let lastDoc = null;
@@ -142,14 +141,13 @@ function createEntity(entityName) {
     snap.docs.forEach(d => allDocs.push({ id: d.id, ...d.data() }));
     lastDoc = snap.docs[snap.docs.length - 1];
 
-    // Para se veio menos que o batch (chegou ao fim) ou atingiu o limite pedido
+    // Para se chegou ao fim
     if (snap.docs.length < BATCH) break;
-    if (limitValue && limitValue < 9999 && allDocs.length >= limitValue) break;
+    // Para se atingiu o limite pedido
+    if (limitValue && allDocs.length >= limitValue) break;
   }
 
-  return limitValue && limitValue < 9999
-    ? allDocs.slice(0, limitValue)
-    : allDocs;
+  return limitValue ? allDocs.slice(0, limitValue) : allDocs;
 },
 
     async filter(filters = {}, sort, limitValue = 9999) {

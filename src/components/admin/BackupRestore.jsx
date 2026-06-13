@@ -63,7 +63,7 @@ export default function BackupRestore() {
       const counts = {};
       await Promise.all(DB_CONFIG.map(async (db) => {
         try {
-          const records = await base44.entities[db.key].list('-created_date', 1000);
+          const records = await base44.entities[db.key].list('-created_date');
           counts[db.key] = records?.length || 0;
         } catch {
           counts[db.key] = '?';
@@ -84,7 +84,7 @@ export default function BackupRestore() {
     for (const db of DB_CONFIG) {
       setExportProgress(prev => [...prev, { key: db.key, label: db.label, status: 'loading' }]);
       try {
-        const records = await base44.entities[db.key].list('-created_date', 1000);
+        const records = await base44.entities[db.key].list('-created_date');
 
         if (!records || records.length === 0) {
           setExportProgress(prev => prev.map(p => p.key === db.key ? { ...p, status: 'empty', count: 0 } : p));
@@ -167,7 +167,7 @@ export default function BackupRestore() {
 
       await Promise.all(Object.keys(allData).map(async (dbKey) => {
         try {
-          const existing = await base44.entities[dbKey].list('-created_date', 1000);
+          const existing = await base44.entities[dbKey].list('-created_date');
           existingByDb[dbKey] = existing || [];
 
           const incoming = allData[dbKey];
