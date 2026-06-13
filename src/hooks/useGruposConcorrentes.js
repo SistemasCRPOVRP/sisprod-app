@@ -17,7 +17,7 @@ export function useGruposConcorrentes(tipoNivel) {
     queryKey: ['grupos-concorrentes', tipoNivel],
     queryFn: () => tipoNivel
       ? base44.entities.RankingComposicao.filter({ tipo_nivel: tipoNivel })
-      : base44.entities.RankingComposicao.list('-created_date', 200),
+      : base44.entities.RankingComposicao.list('-created_date'),
     initialData: [],
   });
 

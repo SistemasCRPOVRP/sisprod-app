@@ -71,7 +71,7 @@ export default function SolicitacoesEdicao() {
   const queryClient = useQueryClient();
   const { data: editRequests = [] } = useQuery({
     queryKey: ['edit-requests'],
-    queryFn: () => base44.entities.EditRequest.list('-created_date', 200),
+    queryFn: () => base44.entities.EditRequest.list('-created_date'),
   });
 
   const [prazos, setPrazos] = useState({});

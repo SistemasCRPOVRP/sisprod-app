@@ -32,13 +32,13 @@ export default function Admin() {
 
   const { data: logs = [] } = useQuery({
     queryKey: ['audit-logs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date', 100),
+    queryFn: () => base44.entities.AuditLog.list('-created_date'),
     initialData: [],
   });
 
   const { data: editRequests = [] } = useQuery({
     queryKey: ['edit-requests'],
-    queryFn: () => base44.entities.EditRequest.list('-created_date', 200),
+    queryFn: () => base44.entities.EditRequest.list('-created_date'),
     initialData: [],
   });
 

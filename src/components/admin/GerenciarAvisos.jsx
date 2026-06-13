@@ -40,12 +40,12 @@ export default function GerenciarAvisos({ appUser }) {
 
   const { data: avisos = [], isLoading } = useQuery({
     queryKey: ['avisos'],
-    queryFn: () => base44.entities.Aviso.list('-created_date', 200),
+    queryFn: () => base44.entities.Aviso.list('-created_date'),
   });
 
   const { data: appUsers = [] } = useQuery({
     queryKey: ['app-users'],
-    queryFn: () => base44.entities.AppUser.list('-created_date', 9999),
+    queryFn: () => base44.entities.AppUser.list('-created_date'),
   });
 
   const usersAtivos = appUsers.filter(u => u.status === 'ativo' && u.telefone);

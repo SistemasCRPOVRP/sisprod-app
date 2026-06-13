@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       const isAdmin = appUser && ['administrador', 'comandante_crpm'].includes(appUser.perfil);
       if (!isAdmin) {
         // Verifica liberação ativa
-        const editRequests = await base44.asServiceRole.entities.EditRequest.list('-created_date', 50);
+        const editRequests = await base44.asServiceRole.entities.EditRequest.list('-created_date');
         const now = new Date();
         const liberacaoAtiva = editRequests.find(r =>
           r.production_id === recordId &&

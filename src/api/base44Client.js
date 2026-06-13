@@ -124,27 +124,36 @@ function createEntity(entityName) {
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     },
 
-   async list(sort, limitValue = null) {
+  async list(sort, limitValue = null) {
   const BATCH = 1000;
   const allDocs = [];
   let lastDoc = null;
 
   while (true) {
     const constraints = [];
-    if (sort) constraints.push(parseOrder(sort));
+    // Sem ordenação para paginação mais confiável
     constraints.push(limit(BATCH));
     if (lastDoc) constraints.push(startAfter(lastDoc));
 
-    const q = query(col, ...constraints.filter(Boolean));
+    const q = query(col, ...constraints);
     const snap = await getDocs(q);
 
     snap.docs.forEach(d => allDocs.push({ id: d.id, ...d.data() }));
     lastDoc = snap.docs[snap.docs.length - 1];
 
-    // Para se chegou ao fim
     if (snap.docs.length < BATCH) break;
-    // Para se atingiu o limite pedido
     if (limitValue && allDocs.length >= limitValue) break;
+  }
+
+  // Ordena em memória após buscar tudo
+  if (sort) {
+    const isDesc = sort.startsWith('-');
+    const field = isDesc ? sort.slice(1) : sort;
+    allDocs.sort((a, b) => {
+      const va = a[field] || '';
+      const vb = b[field] || '';
+      return isDesc ? vb.localeCompare(String(va)) : String(va).localeCompare(String(vb));
+    });
   }
 
   return limitValue ? allDocs.slice(0, limitValue) : allDocs;

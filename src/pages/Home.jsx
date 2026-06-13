@@ -74,7 +74,7 @@ export default function Home() {
 
   const { data: avisos = [] } = useQuery({
     queryKey: ['avisos'],
-    queryFn: () => base44.entities.Aviso.list('-created_date', 9999),
+    queryFn: () => base44.entities.Aviso.list('-created_date'),
     staleTime: 0,
   });
 

@@ -151,7 +151,7 @@ export default function GerenciarAbasUsuario({ open, onClose }) {
 
   const { data: appUsers = [] } = useQuery({
     queryKey: ['app-users'],
-    queryFn: () => base44.entities.AppUser.list('-created_date', 200),
+    queryFn: () => base44.entities.AppUser.list('-created_date'),
     enabled: open,
   });
 

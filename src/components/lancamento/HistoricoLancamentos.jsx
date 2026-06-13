@@ -426,7 +426,7 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
 
   const { data: editRequests = [] } = useQuery({
     queryKey: ['edit-requests'],
-    queryFn: () => base44.entities.EditRequest.list('-created_date', 200),
+    queryFn: () => base44.entities.EditRequest.list('-created_date'),
     enabled: open,
   });
 

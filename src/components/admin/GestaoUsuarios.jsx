@@ -366,7 +366,7 @@ function AccessRequestsTab({ highlightId }) {
   const queryClient = useQueryClient();
   const { data: requests = [] } = useQuery({
     queryKey: ['access-requests'],
-    queryFn: () => base44.entities.AccessRequest.list('-created_date', 100),
+    queryFn: () => base44.entities.AccessRequest.list('-created_date'),
   });
   const [senhas, setSenhas] = useState({});
   const [obs, setObs] = useState({});
@@ -663,12 +663,12 @@ export default function GestaoUsuarios({ highlightRequestId, openRequestsTab }) 
 
   const { data: appUsers = [] } = useQuery({
     queryKey: ['app-users'],
-    queryFn: () => base44.entities.AppUser.list('-created_date', 200),
+    queryFn: () => base44.entities.AppUser.list('-created_date'),
   });
 
   const { data: requests = [] } = useQuery({
     queryKey: ['access-requests'],
-    queryFn: () => base44.entities.AccessRequest.list('-created_date', 100),
+    queryFn: () => base44.entities.AccessRequest.list('-created_date'),
   });
 
   const pendingCount = requests.filter(r => r.status === 'pendente').length;

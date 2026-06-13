@@ -124,7 +124,7 @@ export default function Historico() {
   // Carrega EditRequests para verificar liberações ativas
   const { data: editRequests = [] } = useQuery({
     queryKey: ['edit-requests'],
-    queryFn: () => base44.entities.EditRequest.list('-created_date', 200),
+    queryFn: () => base44.entities.EditRequest.list('-created_date'),
     initialData: [],
   });
 
