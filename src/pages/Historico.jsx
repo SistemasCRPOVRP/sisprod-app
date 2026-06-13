@@ -616,35 +616,16 @@ tr.total-row td { background:#d4e8d4;font-weight:700;font-size:9pt;border-top:2p
                         const Icon = isImg ? Image : isPdf ? FileText : Download;
                         const label = isImg ? 'Imagem' : isPdf ? 'PDF' : 'Arquivo';
                         return (
-  <button
-   onClick={async () => {
-  try {
-    const match = p.anexo_url.match(/\/sisprod\/([^/.]+)/);
-    const publicId = match ? `sisprod/${match[1]}` : null;
-    if (!publicId) { window.open(p.anexo_url, '_blank'); return; }
-    const res = await fetch('/api/download-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ publicId }),
-    });
-    if (!res.ok) { window.open(p.anexo_url, '_blank'); return; }
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = `anexo_${publicId.split('/').pop()}.pdf`;
-    a.click();
-    URL.revokeObjectURL(blobUrl);
-  } catch {
-    window.open(p.anexo_url, '_blank');
-  }
-}}
+  
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
     title={`Baixar ${label}`}
-    className="inline-flex flex-col items-center gap-0.5 text-primary hover:text-primary/80 transition-colors cursor-pointer"
+    className="inline-flex flex-col items-center gap-0.5 text-primary hover:text-primary/80 transition-colors"
   >
     <Icon className="w-4 h-4" />
     <span className="text-[9px] font-medium">{label}</span>
-  </button>
+  </a>
 );
                       })() : p.anexo_url ? (
                         <span className="text-muted-foreground text-xs" title="Apenas administradores podem baixar anexos">

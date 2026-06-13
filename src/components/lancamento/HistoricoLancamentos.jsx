@@ -639,35 +639,10 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
                       {/* Linha 3: quantidade */}
                       <div className="flex items-center gap-2 mt-0.5">
                         {formatQtdExibicao(p)}
-                        {p.anexo_url && (
-  <button
-    type="button"
-    onClick={async () => {
-  try {
-    const match = p.anexo_url.match(/\/sisprod\/([^/.]+)/);
-    const publicId = match ? `sisprod/${match[1]}` : null;
-    if (!publicId) { window.open(p.anexo_url, '_blank'); return; }
-    const res = await fetch('/api/download-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ publicId }),
-    });
-    if (!res.ok) { window.open(p.anexo_url, '_blank'); return; }
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = `anexo_${publicId.split('/').pop()}.pdf`;
-    a.click();
-    URL.revokeObjectURL(blobUrl);
-  } catch {
-    window.open(p.anexo_url, '_blank');
-  }
-}}
-    className="text-muted-foreground hover:text-foreground"
-  >
+                      {p.anexo_url && (
+  <a href={p.anexo_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
     <ExternalLink className="w-3 h-3" />
-  </button>
+  </a>
 )}
                       </div>
                       {/* Linha 4: obs resumida */}
