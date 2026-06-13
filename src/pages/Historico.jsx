@@ -616,7 +616,7 @@ tr.total-row td { background:#d4e8d4;font-weight:700;font-size:9pt;border-top:2p
                         const Icon = isImg ? Image : isPdf ? FileText : Download;
                         const label = isImg ? 'Imagem' : isPdf ? 'PDF' : 'Arquivo';
                         return (
-  
+  <a
     href={url}
     target="_blank"
     rel="noopener noreferrer"
