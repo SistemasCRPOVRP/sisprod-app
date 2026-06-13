@@ -643,22 +643,27 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
   <button
     type="button"
     onClick={async () => {
-      try {
-        const match = p.anexo_url.match(/\/sisprod\/([^/.]+)/);
-        const publicId = match ? `sisprod/${match[1]}` : null;
-        if (!publicId) { window.open(p.anexo_url, '_blank'); return; }
-        const res = await fetch('/api/download-pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ publicId }),
-        });
-        const data = await res.json();
-        if (data.url) window.open(data.url, '_blank');
-        else window.open(p.anexo_url, '_blank');
-      } catch {
-        window.open(p.anexo_url, '_blank');
-      }
-    }}
+  try {
+    const match = p.anexo_url.match(/\/sisprod\/([^/.]+)/);
+    const publicId = match ? `sisprod/${match[1]}` : null;
+    if (!publicId) { window.open(p.anexo_url, '_blank'); return; }
+    const res = await fetch('/api/download-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ publicId }),
+    });
+    if (!res.ok) { window.open(p.anexo_url, '_blank'); return; }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `anexo_${publicId.split('/').pop()}.pdf`;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(p.anexo_url, '_blank');
+  }
+}}
     className="text-muted-foreground hover:text-foreground"
   >
     <ExternalLink className="w-3 h-3" />

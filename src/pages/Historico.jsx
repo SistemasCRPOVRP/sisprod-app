@@ -617,24 +617,28 @@ tr.total-row td { background:#d4e8d4;font-weight:700;font-size:9pt;border-top:2p
                         const label = isImg ? 'Imagem' : isPdf ? 'PDF' : 'Arquivo';
                         return (
   <button
-    onClick={async () => {
-      try {
-        // Extrai o public_id da URL do Cloudinary
-        const match = url.match(/\/sisprod\/([^/.]+)/);
-        const publicId = match ? `sisprod/${match[1]}` : null;
-        if (!publicId) { window.open(url, '_blank'); return; }
-        const res = await fetch('/api/download-pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ publicId }),
-        });
-        const data = await res.json();
-        if (data.url) window.open(data.url, '_blank');
-        else window.open(url, '_blank');
-      } catch {
-        window.open(url, '_blank');
-      }
-    }}
+   onClick={async () => {
+  try {
+    const match = p.anexo_url.match(/\/sisprod\/([^/.]+)/);
+    const publicId = match ? `sisprod/${match[1]}` : null;
+    if (!publicId) { window.open(p.anexo_url, '_blank'); return; }
+    const res = await fetch('/api/download-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ publicId }),
+    });
+    if (!res.ok) { window.open(p.anexo_url, '_blank'); return; }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `anexo_${publicId.split('/').pop()}.pdf`;
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    window.open(p.anexo_url, '_blank');
+  }
+}}
     title={`Baixar ${label}`}
     className="inline-flex flex-col items-center gap-0.5 text-primary hover:text-primary/80 transition-colors cursor-pointer"
   >
