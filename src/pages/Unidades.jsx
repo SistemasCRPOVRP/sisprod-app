@@ -201,12 +201,32 @@ export default function Unidades() {
     setShowAtualizarDialog(true);
   };
 
-  const handleSaveManual = (novoOrg) => {
-    setBackup(organograma);
-    setOrganograma(novoOrg);
-    setTemAlteracoes(true);
-    toast.success('Alterações aplicadas! Clique em "Salvar Organograma" para gravar no banco.');
-  };
+ const handleSaveManual = async (novoOrg) => {
+  setBackup(organograma);
+  setOrganograma(novoOrg);
+  setSalvando(true);
+  try {
+    const valor = JSON.stringify(novoOrg);
+    if (configId) {
+      await base44.entities.SystemConfig.update(configId, { valor });
+    } else {
+      const novo = await base44.entities.SystemConfig.create({ chave: 'organograma', valor });
+      setConfigId(novo.id);
+    }
+    await base44.entities.AuditLog.create({
+      usuario: appUser?.email || appUser?.id_funcional || 'sistema',
+      acao: 'editou',
+      tabela: 'Organograma',
+      detalhe: 'Organograma editado e salvo no banco de dados',
+    });
+    setTemAlteracoes(false);
+    toast.success('Organograma salvo permanentemente no banco de dados!');
+  } catch (err) {
+    toast.error('Erro ao salvar: ' + err.message);
+  } finally {
+    setSalvando(false);
+  }
+};
 
   const handleRestoreBackup = () => {
     if (!backup) { toast.error('Nenhum backup disponível.'); return; }
