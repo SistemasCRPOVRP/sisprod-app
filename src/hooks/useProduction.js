@@ -142,7 +142,37 @@ export function useAllProductions() {
     gcTime: 1000 * 60 * 30,
   });
 }
+/* =========================================================
+   HOOK: PRODUCTIONS PARA HISTÓRICO / RELATÓRIOS
+   Busca só ao abrir a aba (sem tempo real) e apenas o
+   período/intervalo selecionado — economiza leituras.
+========================================================= */
 
+export function useProductionsHistorico({ periodo, useDateRange, dataInicio, dataFim }) {
+  return useQuery({
+    queryKey: ['hist-productions', periodo, useDateRange, dataInicio, dataFim],
+    queryFn: async () => {
+      let qRef;
+      const usandoIntervalo = useDateRange && (dataInicio || dataFim);
+
+      if (usandoIntervalo) {
+        const constraints = [];
+        if (dataInicio) constraints.push(where('data', '>=', dataInicio));
+        if (dataFim)    constraints.push(where('data', '<=', dataFim));
+        qRef = query(collection(db, 'Production'), ...constraints);
+      } else {
+        // Modo trimestre (ou intervalo sem datas escolhidas): busca só o período
+        qRef = query(collection(db, 'Production'), where('periodo', '==', periodo));
+      }
+
+      const snap = await getDocs(qRef);
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+    initialData: [],
+    staleTime: 1000 * 60 * 2,   // reaproveita por 2 min ao navegar entre abas
+    refetchOnMount: 'always',   // busca de novo toda vez que abre a aba
+  });
+}
 /* =========================================================
    RANKING PADRÃO
 ========================================================= */

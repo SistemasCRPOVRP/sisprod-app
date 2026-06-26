@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from '@/components/ui/dialog';
 import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
-import { useAllProductions } from '@/hooks/useProduction';
+import { useProductionsHistorico } from '@/hooks/useProduction';
 import { Pencil, Trash2, Search, Lock, X, Droplets, Lightbulb, TrendingDown, TrendingUp, Download, FileText, Image, FileSpreadsheet, Printer, Loader2, ArrowUpDown, ArrowDownUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isAfter, subHours } from 'date-fns';
@@ -112,7 +112,7 @@ export default function Historico() {
   const [requestDialog, setRequestDialog] = useState(null);
   const [sortDesc, setSortDesc] = useState(true); // true = decrescente (padrão)
 
-  const { data: allProductions } = useAllProductions();
+ const { data: allProductions = [] } = useProductionsHistorico({ periodo, useDateRange, dataInicio, dataFim });
   const isAdmin = appUser?.perfil === 'administrador';
 
   // Indicadores para o dialog de edição completo (admin)
