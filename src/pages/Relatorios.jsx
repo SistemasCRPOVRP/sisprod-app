@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
-import { useAllProductions, useIndicators } from '@/hooks/useProduction';
+import { useProductionsHistorico, useIndicators } from '@/hooks/useProduction';
 import { BPMs, getCias, getPelotoes, getGPMs, MUNICIPIOS } from '@/lib/orgData';
 import { FileText, Download, Printer, FileSpreadsheet, Loader2, ExternalLink, X, BarChart3, List, TrendingUp, TrendingDown, Settings2, ChevronDown, ChevronUp, SlidersHorizontal, Layers, Trophy, Droplets, Lightbulb, ArrowDownUp, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -133,7 +133,7 @@ export default function Relatorios() {
   // Filtros colapsáveis (fechado por padrão em mobile)
   const [filtrosAbertos, setFiltrosAbertos] = useState(window.innerWidth >= 1024);
 
-  const { data: allProductions } = useAllProductions();
+  const { data: allProductions = [] } = useProductionsHistorico({ periodo, useDateRange, dataInicio, dataFim });
   const { data: indicators } = useIndicators();
 
   const cias = getCias(bpmFilter);
@@ -565,9 +565,8 @@ export default function Relatorios() {
             <Select value={periodo} onValueChange={setPeriodo}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>Todos os períodos</SelectItem>
-                {getAllPeriodos().map(p => <SelectItem key={p} value={p}>{getPeriodoLabel(p)}</SelectItem>)}
-              </SelectContent>
+  {getAllPeriodos().map(p => <SelectItem key={p} value={p}>{getPeriodoLabel(p)}</SelectItem>)}
+</SelectContent>
             </Select>
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
@@ -727,7 +726,7 @@ export default function Relatorios() {
             {tipoRelatorio === 'por_categoria' ? 'Por Categoria' : tipoRelatorio === 'por_indicador' ? 'Por Indicador' : tipoRelatorio === 'evolucao_economia' ? 'Evolução de Economia (Água e Luz)' : 'Preview Detalhado'}
           </span>
           <span className="text-xs text-muted-foreground">
-            {tipoRelatorio === 'detalhado' ? (filtered.length > 200 ? 'Exibindo primeiros 200' : `${filtered.length} registros`) : `${filtered.length} registros`}
+            {`${filtered.length} registros`}
           </span>
         </div>
         <div className="overflow-auto">
@@ -745,7 +744,7 @@ export default function Relatorios() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {sortedFiltered.slice(0, 200).map(p => (
+                {sortedFiltered.map(p => (
                   <tr key={p.id} className="hover:bg-muted/20">
                     {colunasOrdenadas.map(col => renderCell(p, col.key))}
                   </tr>
