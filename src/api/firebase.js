@@ -1,15 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// src/api/firebase.js
+// Reexporta a MESMA instância do Firebase já inicializada em base44Client.js.
+// Isso evita criar uma segunda conexão Firebase (que duplicaria as leituras
+// e consumia a cota diária do Firestore mais rápido).
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-
-export const db = getFirestore(app);
+export { db } from '@/api/base44Client';

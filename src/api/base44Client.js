@@ -124,42 +124,51 @@ function createEntity(entityName) {
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     },
 
-  async list(sort, limitValue = null) {
-  const BATCH = 1000;
-  const allDocs = [];
-  let lastDoc = null;
+    // LIST SIMPLES — limite padrão de 1000 (uso geral do app).
+    // Faz UMA única leitura limitada, economizando cota do Firestore.
+    async list(sort, limitValue = 1000) {
+      const constraints = [];
+      if (sort) constraints.push(parseOrder(sort));
+      if (limitValue) constraints.push(limit(limitValue));
+      const q = query(col, ...constraints.filter(Boolean));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
 
-  while (true) {
-    const constraints = [];
-    // Sem ordenação para paginação mais confiável
-    constraints.push(limit(BATCH));
-    if (lastDoc) constraints.push(startAfter(lastDoc));
+    // LIST ALL — pagina sem limite, busca TODOS os registros.
+    // Usar SOMENTE no backup/exportação, nunca em telas comuns.
+    async listAll(sort) {
+      const BATCH = 1000;
+      const allDocs = [];
+      let lastDoc = null;
 
-    const q = query(col, ...constraints);
-    const snap = await getDocs(q);
+      while (true) {
+        const constraints = [limit(BATCH)];
+        if (lastDoc) constraints.push(startAfter(lastDoc));
+        const q = query(col, ...constraints);
+        const snap = await getDocs(q);
 
-    snap.docs.forEach(d => allDocs.push({ id: d.id, ...d.data() }));
-    lastDoc = snap.docs[snap.docs.length - 1];
+        snap.docs.forEach(d => allDocs.push({ id: d.id, ...d.data() }));
+        lastDoc = snap.docs[snap.docs.length - 1];
 
-    if (snap.docs.length < BATCH) break;
-    if (limitValue && allDocs.length >= limitValue) break;
-  }
+        if (snap.docs.length < BATCH) break;
+      }
 
-  // Ordena em memória após buscar tudo
-  if (sort) {
-    const isDesc = sort.startsWith('-');
-    const field = isDesc ? sort.slice(1) : sort;
-    allDocs.sort((a, b) => {
-      const va = a[field] || '';
-      const vb = b[field] || '';
-      return isDesc ? vb.localeCompare(String(va)) : String(va).localeCompare(String(vb));
-    });
-  }
+      // Ordena em memória após buscar tudo
+      if (sort) {
+        const isDesc = sort.startsWith('-');
+        const field = isDesc ? sort.slice(1) : sort;
+        allDocs.sort((a, b) => {
+          const va = String(a[field] ?? '');
+          const vb = String(b[field] ?? '');
+          return isDesc ? vb.localeCompare(va) : va.localeCompare(vb);
+        });
+      }
 
-  return limitValue ? allDocs.slice(0, limitValue) : allDocs;
-},
+      return allDocs;
+    },
 
-    async filter(filters = {}, sort, limitValue = 9999) {
+    async filter(filters = {}, sort, limitValue = 1000) {
       const constraints = [];
       Object.entries(filters || {}).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

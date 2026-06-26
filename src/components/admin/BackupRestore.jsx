@@ -60,8 +60,7 @@ export default function BackupRestore() {
       const counts = {};
       await Promise.all(DB_CONFIG.map(async (db) => {
         try {
-          const records = await base44.entities[db.key].list('-created_date');
-          counts[db.key] = records?.length || 0;
+          counts[db.key] = '?';
         } catch {
           counts[db.key] = '?';
         }
@@ -80,7 +79,7 @@ export default function BackupRestore() {
     for (const db of DB_CONFIG) {
       setExportProgress(prev => [...prev, { key: db.key, label: db.label, status: 'loading' }]);
       try {
-        const records = await base44.entities[db.key].list('-created_date');
+        const records = await base44.entities[db.key].listAll('-created_date');
         if (!records || records.length === 0) {
           setExportProgress(prev => prev.map(p => p.key === db.key ? { ...p, status: 'empty', count: 0 } : p));
           const ws = XLSX.utils.aoa_to_sheet([['(sem registros)']]);
@@ -297,9 +296,9 @@ export default function BackupRestore() {
             <div className="text-2xl">{db.icon}</div>
             <p className="text-xs font-semibold leading-tight">{db.label}</p>
             <Badge variant="secondary" className={`text-[10px] ${db.color}`}>{db.key}</Badge>
-            <p className="text-xs font-mono font-bold text-primary">
-              {loadingCounts ? <span className="text-muted-foreground">...</span> : `${dbCounts[db.key] ?? 0} reg.`}
-            </p>
+            <p className="text-[10px] font-medium text-muted-foreground" title="A contagem real é feita ao exportar o backup">
+  contar ao exportar
+</p>
           </div>
         ))}
       </div>
