@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Building2, ChevronDown, ChevronRight, Upload, FileText, RefreshCw, Lock, Unlock, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, ChevronDown, ChevronRight, Upload, FileText, RefreshCw, Lock, Unlock, ShieldAlert, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -74,10 +74,8 @@ function OrgNode({ node, path }) {
   return (
     <div className={`${path.length > 0 ? 'ml-4 sm:ml-6 border-l-2 border-dashed border-border pl-3 sm:pl-4' : ''}`}>
       <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-1 transition-all hover:shadow-sm ${cor.bg}`}>
-        <span
-          className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cor.dot} ${hasChildren ? 'cursor-pointer' : ''}`}
-          onClick={() => hasChildren && setOpen(o => !o)}
-        />
+        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cor.dot} ${hasChildren ? 'cursor-pointer' : ''}`}
+          onClick={() => hasChildren && setOpen(o => !o)} />
         <div className="flex-1 min-w-0 cursor-pointer" onClick={() => hasChildren && setOpen(o => !o)}>
           <span className="font-bold text-sm">{node.nome}</span>
           {node.local && <span className="text-xs ml-2 opacity-70">{node.local}</span>}
@@ -108,9 +106,75 @@ export default function Unidades() {
   const [organograma, setOrganograma] = useState(INITIAL_ORGANOGRAMA);
   const [backup, setBackup] = useState(null);
   const [travado, setTravado] = useState(true);
-  const [pdfUrl, setPdfUrl] = useState('https://media.base44.com/files/public/69ea1019a6b072f9661e6c7e/fdd25eb7a_NovaestruturaCRPM_VRPmar_2026-OrganogramaCRPM_VRPdrawio.pdf');
+  const [pdfUrl, setPdfUrl] = useState('');
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [showAtualizarDialog, setShowAtualizarDialog] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [temAlteracoes, setTemAlteracoes] = useState(false);
+  const [configId, setConfigId] = useState(null);
+  const [pdfConfigId, setPdfConfigId] = useState(null);
+
+  // Carrega organograma e PDF salvos do Firebase ao montar
+  useEffect(() => {
+    const carregar = async () => {
+      try {
+        const orgConfig = await base44.entities.SystemConfig.filter({ chave: 'organograma' }, '-created_date', 1);
+        if (orgConfig?.[0]?.valor) {
+          const parsed = typeof orgConfig[0].valor === 'string' ? JSON.parse(orgConfig[0].valor) : orgConfig[0].valor;
+          if (parsed?.nome) setOrganograma(parsed);
+          setConfigId(orgConfig[0].id);
+        }
+        const pdfConfig = await base44.entities.SystemConfig.filter({ chave: 'organograma_pdf' }, '-created_date', 1);
+        if (pdfConfig?.[0]?.valor) {
+          setPdfUrl(pdfConfig[0].valor);
+          setPdfConfigId(pdfConfig[0].id);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar organograma:', err);
+      }
+    };
+    carregar();
+  }, []);
+
+  // Salva o organograma no Firebase
+  const handleSalvarOrganograma = async () => {
+    setSalvando(true);
+    try {
+      const valor = JSON.stringify(organograma);
+      if (configId) {
+        await base44.entities.SystemConfig.update(configId, { valor });
+      } else {
+        const novo = await base44.entities.SystemConfig.create({ chave: 'organograma', valor });
+        setConfigId(novo.id);
+      }
+      await base44.entities.AuditLog.create({
+        usuario: appUser?.email || appUser?.id_funcional || 'sistema',
+        acao: 'editou',
+        tabela: 'Organograma',
+        detalhe: 'Organograma salvo no banco de dados',
+      });
+      setTemAlteracoes(false);
+      toast.success('Organograma salvo com sucesso no banco de dados!');
+    } catch (err) {
+      toast.error('Erro ao salvar: ' + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Salva a URL do PDF no Firebase
+  const salvarPdfUrl = async (url) => {
+    try {
+      if (pdfConfigId) {
+        await base44.entities.SystemConfig.update(pdfConfigId, { valor: url });
+      } else {
+        const novo = await base44.entities.SystemConfig.create({ chave: 'organograma_pdf', valor: url });
+        setPdfConfigId(novo.id);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar PDF URL:', err);
+    }
+  };
 
   const handleUploadPDF = async (e) => {
     const file = e.target.files[0];
@@ -120,7 +184,8 @@ export default function Unidades() {
       const { uploadFile } = await import('@/api/base44Client');
       const { file_url } = await uploadFile(file);
       setPdfUrl(file_url);
-      toast.success('PDF atualizado com sucesso!');
+      await salvarPdfUrl(file_url);
+      toast.success('PDF atualizado e salvo com sucesso!');
     } catch {
       toast.error('Erro ao enviar o PDF');
     } finally {
@@ -136,18 +201,11 @@ export default function Unidades() {
     setShowAtualizarDialog(true);
   };
 
-  const handleSaveManual = async (novoOrg) => {
-    setBackup(organograma); // salva backup antes de aplicar
+  const handleSaveManual = (novoOrg) => {
+    setBackup(organograma);
     setOrganograma(novoOrg);
-    try {
-      await base44.entities.AuditLog.create({
-        usuario: appUser?.email || appUser?.id_funcional || 'sistema',
-        acao: 'editou',
-        tabela: 'Organograma',
-        detalhe: `Organograma editado manualmente`,
-      });
-    } catch {}
-    toast.success('Organograma salvo!');
+    setTemAlteracoes(true);
+    toast.success('Alterações aplicadas! Clique em "Salvar Organograma" para gravar no banco.');
   };
 
   const handleRestoreBackup = () => {
@@ -155,21 +213,15 @@ export default function Unidades() {
     if (!window.confirm('Restaurar o backup anterior do organograma?')) return;
     setOrganograma(backup);
     setBackup(null);
-    toast.success('Backup restaurado!');
+    setTemAlteracoes(true);
+    toast.success('Backup restaurado! Clique em "Salvar" para gravar.');
   };
 
-  const handleConfirmarNovoOrganograma = async (novoOrg) => {
+  const handleConfirmarNovoOrganograma = (novoOrg) => {
     setBackup(organograma);
     setOrganograma(novoOrg);
-    try {
-      await base44.entities.AuditLog.create({
-        usuario: appUser?.email || appUser?.id_funcional || 'sistema',
-        acao: 'editou',
-        tabela: 'Organograma',
-        detalhe: `Organograma atualizado via PDF — raiz: ${novoOrg?.nome}`,
-      });
-    } catch {}
-    toast.success('Organograma atualizado com sucesso!');
+    setTemAlteracoes(true);
+    toast.success('Organograma atualizado! Clique em "Salvar Organograma" para gravar no banco.');
     setShowAtualizarDialog(false);
   };
 
@@ -183,50 +235,57 @@ export default function Unidades() {
           <p className="text-sm text-muted-foreground mt-1">CRPM/VRP — Estrutura Organizacional</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <button
-            onClick={() => setView('organograma')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${view === 'organograma' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}
-          >
+          <button onClick={() => setView('organograma')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${view === 'organograma' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}>
             Organograma
           </button>
-          <button
-            onClick={() => setView('pdf')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${view === 'pdf' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}
-          >
+          <button onClick={() => setView('pdf')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${view === 'pdf' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}>
             Ver PDF
           </button>
 
-          {/* Botão de travamento — apenas admin */}
           {isAdmin && (
-            <Button
-              variant={travado ? 'outline' : 'destructive'}
-              size="sm"
+            <Button variant={travado ? 'outline' : 'destructive'} size="sm"
               className={`gap-2 ${travado ? 'border-amber-400 text-amber-700 hover:bg-amber-50' : 'border-red-400'}`}
               onClick={() => {
                 if (travado) {
                   setTravado(false);
-                  toast.success('Modo de edição ativado. Edite diretamente no organograma.');
+                  toast.success('Modo de edição ativado.');
                 } else {
                   setTravado(true);
-                  toast.success('Organograma travado. Edições bloqueadas.');
+                  toast.success('Organograma travado.');
                 }
-              }}
-            >
+              }}>
               {travado ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
               {travado ? 'Destravar para Editar' : 'Travar Organograma'}
             </Button>
           )}
 
-          <Button
-            onClick={handleAtualizarOrganograma}
-            variant="outline"
-            className={`gap-2 ${travado ? 'opacity-50 cursor-not-allowed border-border text-muted-foreground' : 'border-primary/40 text-primary hover:bg-primary/5'}`}
-          >
+          <Button onClick={handleAtualizarOrganograma} variant="outline"
+            className={`gap-2 ${travado ? 'opacity-50 cursor-not-allowed border-border text-muted-foreground' : 'border-primary/40 text-primary hover:bg-primary/5'}`}>
             <RefreshCw className="w-4 h-4" />
-            Atualizar Organograma
+            Atualizar via PDF
           </Button>
+
+          {/* BOTÃO SALVAR — aparece para admin */}
+          {isAdmin && (
+            <Button onClick={handleSalvarOrganograma} disabled={salvando}
+              className={`gap-2 ${temAlteracoes ? 'bg-green-700 hover:bg-green-800 animate-pulse' : 'bg-green-700 hover:bg-green-800'}`}>
+              {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {salvando ? 'Salvando...' : 'Salvar Organograma'}
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Aviso de alterações não salvas */}
+      {temAlteracoes && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-xs text-green-800">
+          <Save className="w-4 h-4 flex-shrink-0" />
+          <span className="font-semibold">Há alterações não salvas.</span>
+          <span>Clique em "Salvar Organograma" para gravar permanentemente no banco de dados.</span>
+        </div>
+      )}
 
       {/* Legenda */}
       <div className="flex flex-wrap gap-3">
@@ -243,13 +302,13 @@ export default function Unidades() {
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
           <Lock className="w-4 h-4 flex-shrink-0" />
           <span className="font-semibold">Organograma protegido contra alterações.</span>
-          <span>{isAdmin ? 'Clique em "Organograma Travado" para habilitar edições.' : 'Somente administradores podem alterar o organograma.'}</span>
+          <span>{isAdmin ? 'Clique em "Destravar para Editar" para habilitar edições.' : 'Somente administradores podem alterar o organograma.'}</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
           <ShieldAlert className="w-4 h-4 flex-shrink-0" />
           <span className="font-semibold">⚠ Modo de edição ativo.</span>
-          <span>O organograma pode ser alterado. Trave novamente após concluir as atualizações.</span>
+          <span>O organograma pode ser alterado. Salve e trave novamente após concluir.</span>
         </div>
       )}
 
@@ -267,12 +326,7 @@ export default function Unidades() {
           </div>
           <div className="p-4">
             {pdfUrl ? (
-              <iframe
-                src={pdfUrl}
-                className="w-full rounded-lg border border-border"
-                style={{ height: '70vh' }}
-                title="Organograma CRPM/VRP"
-              />
+              <iframe src={pdfUrl} className="w-full rounded-lg border border-border" style={{ height: '70vh' }} title="Organograma CRPM/VRP" />
             ) : (
               <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
                 <FileText className="w-10 h-10 opacity-30" />
@@ -289,6 +343,7 @@ export default function Unidades() {
               onChange={(updater) => {
                 const next = typeof updater === 'function' ? updater(organograma) : updater;
                 setOrganograma(next);
+                setTemAlteracoes(true);
               }}
               onSave={(org) => handleSaveManual(org)}
             />
