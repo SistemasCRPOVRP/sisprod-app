@@ -28,7 +28,6 @@ function limparNomeUnidade(nome) {
 function municipioSeNaoRepetido(name, municipio) {
   if (!municipio) return '';
   if (!name) return municipio;
-  // Verifica se algum segmento do name é igual ao município
   const partes = name.split('/').map(s => s.trim().toLowerCase());
   if (partes.includes(municipio.trim().toLowerCase())) return '';
   return municipio;
@@ -45,7 +44,7 @@ export default function Ranking() {
   const [level, setLevel] = useState('municipio');
   const [grupoTipo, setGrupoTipo] = useState('todos');
   const [showImprimirDialog, setShowImprimirDialog] = useState(false);
-  const { data: allProductions, isLoading, refetch } = useAllProductions();
+  const { data: allProductions = [], isLoading, refetch } = useAllProductions();
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -55,11 +54,12 @@ export default function Ranking() {
     await refetch();
     setRefreshing(false);
   };
-  const { data: organizations } = useOrganizations();
-  const { modeloAtivo, composicoes } = useRankingConfig();
+
+  const { data: organizations = [] } = useOrganizations();
+  const { modeloAtivo, composicoes = [] } = useRankingConfig();
 
   const productions = useMemo(() => {
-    return allProductions.filter(p => {
+    return (allProductions || []).filter(p => {
       if (useDateRange) {
         if (dataInicio && p.data && p.data < dataInicio) return false;
         if (dataFim && p.data && p.data > dataFim) return false;
@@ -71,14 +71,18 @@ export default function Ranking() {
   }, [allProductions, periodo, useDateRange, dataInicio, dataFim]);
 
   const isPersonalizado = modeloAtivo === 'personalizado' && composicoes.length > 0;
-  const tipoFiltro = grupoTipo === 'todos' ? null : grupoTipo;
 
-  // Mesma base de dados que o Dashboard: productions sem deduplicação extra
-  const ranking = isPersonalizado
-    ? computeComposicaoRanking(productions, composicoes, tipoFiltro)
-    : level === 'municipio'
-      ? computeMunicipalRanking(productions)
-      : computeRankings(productions, organizations, level);
+  // Calcula o ranking conforme o modelo/nível selecionado.
+  // computeRankings espera (productions, level) — NÃO passar organizations.
+  const ranking = useMemo(() => {
+    if (isPersonalizado) {
+      return computeComposicaoRanking(productions, composicoes);
+    }
+    if (level === 'municipio') {
+      return computeMunicipalRanking(productions);
+    }
+    return computeRankings(productions, level);
+  }, [isPersonalizado, productions, composicoes, level]);
 
   // Label do nível atual para exibição
   const levelLabel = { municipio: 'Município', bpm: 'BPM', companhia: 'CIA', pelotao: 'Pelotão', gpm: 'GPM' }[level] || level;
@@ -172,7 +176,7 @@ export default function Ranking() {
           {ranking.slice(0, 3).map((item, i) => {
             const m = medals[i];
             return (
-              <div key={item.name} className={`rounded-xl border-2 ${m.bg} p-4 text-center`}>
+              <div key={`podio-${i}-${item.name || item.id || ''}`} className={`rounded-xl border-2 ${m.bg} p-4 text-center`}>
                 <m.icon className={`w-8 h-8 mx-auto ${m.color}`} />
                 <p className="text-xs font-medium text-muted-foreground mt-2 uppercase tracking-wider">{m.label}</p>
                 <h3 className="text-base font-bold mt-1">
@@ -217,7 +221,7 @@ export default function Ranking() {
             </thead>
             <tbody className="divide-y divide-border">
               {ranking.map((item, index) => (
-                <tr key={item.name} className="hover:bg-muted/30 transition-colors">
+                <tr key={`row-${index}-${item.name || item.id || ''}`} className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2.5">
                     {index < 3 ? <Star className={`w-4 h-4 ${medals[index].color}`} /> : <span className="text-muted-foreground text-xs">{index + 1}º</span>}
                   </td>
@@ -259,12 +263,12 @@ export default function Ranking() {
               )}
               {ranking.length > 0 && (() => {
                 const totals = ranking.reduce((acc, item) => ({
-                  score: acc.score + item.score,
-                  preventiva: acc.preventiva + item.preventiva,
-                  repressiva: acc.repressiva + item.repressiva,
-                  apreensao: acc.apreensao + item.apreensao,
-                  atendimento: acc.atendimento + item.atendimento,
-                  economia: acc.economia + item.economia,
+                  score: acc.score + (item.score || 0),
+                  preventiva: acc.preventiva + (item.preventiva || 0),
+                  repressiva: acc.repressiva + (item.repressiva || 0),
+                  apreensao: acc.apreensao + (item.apreensao || 0),
+                  atendimento: acc.atendimento + (item.atendimento || 0),
+                  economia: acc.economia + (item.economia || 0),
                 }), { score: 0, preventiva: 0, repressiva: 0, apreensao: 0, atendimento: 0, economia: 0 });
                 return (
                   <tr className="bg-muted/60 border-t-2 border-border font-bold">

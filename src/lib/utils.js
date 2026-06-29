@@ -36,6 +36,7 @@ export function getAllPeriodos(yearsBack = 5, yearsForward = 1) {
 }
 
 export function formatNumber(num) {
-  if (num == null) return '0';
-  return num.toLocaleString('pt-BR');
+  const n = Number(num);
+  if (num == null || isNaN(n)) return '0';
+  return n.toLocaleString('pt-BR');
 }
