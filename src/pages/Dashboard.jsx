@@ -125,7 +125,7 @@ export default function Dashboard() {
       return computeMunicipalRanking(filtered);
     }
     // OPM individual — usa nível selecionado
-    return computeRankings(filtered, [], rankingLevel);
+    return computeRankings(filtered, rankingLevel);
   }, [filtered, visualizacao, isPersonalizado, composicoes, rankingLevel]);
 
   const categoryData = computeCategoryBreakdown(filtered);

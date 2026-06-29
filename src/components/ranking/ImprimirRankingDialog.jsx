@@ -46,7 +46,7 @@ export default function ImprimirRankingDialog({ open, onClose, allProductions, o
       const lvl = tipoRanking === 'individual' ? nivel : 'municipio';
       ranking = lvl === 'municipio'
         ? computeMunicipalRanking(deduped)
-        : computeRankings(deduped, organizations, lvl);
+        : computeRankings(deduped, lvl);
       titulo = tipoRanking === 'grupos'
         ? 'Ranking Individual por OPM (Modelo Padrão)'
         : `Ranking Individual — Nível ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}`;

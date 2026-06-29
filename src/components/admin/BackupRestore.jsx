@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Download, Upload, Database, CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet, RefreshCw, Info } from 'lucide-react';
+import { Download, Upload, Database, CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet, RefreshCw, Info, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const DB_CONFIG = [
@@ -52,6 +52,10 @@ export default function BackupRestore() {
   const [dbCounts, setDbCounts] = useState({});
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [dupActions, setDupActions] = useState({});
+  const [limpando, setLimpando] = useState(false);
+  const [limparDialogOpen, setLimparDialogOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [limparProgresso, setLimparProgresso] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -141,6 +145,44 @@ export default function BackupRestore() {
       toast.error('Erro na correção: ' + err.message);
     } finally {
       setCorrigindo(false);
+    }
+  };
+
+  // Apaga TODOS os registros da coleção Production. Operação destrutiva e
+  // irreversível — exige digitar "LIMPAR" para confirmar. Use antes de
+  // reimportar uma planilha completa do Base44 na virada do sistema.
+  const handleLimparProducao = async () => {
+    setLimpando(true);
+    setLimparProgresso(0);
+    try {
+      const registros = await base44.entities.Production.listAll('-created_date');
+      const total = registros.length;
+      if (total === 0) {
+        toast.info('Não há registros de Produção para apagar.');
+        setLimpando(false);
+        setLimparDialogOpen(false);
+        return;
+      }
+      let apagados = 0;
+      for (const r of registros) {
+        try {
+          await base44.entities.Production.delete(r.id);
+          apagados++;
+          if (apagados % 50 === 0 || apagados === total) {
+            setLimparProgresso(Math.round((apagados / total) * 100));
+          }
+        } catch (e) {
+          // continua mesmo se um registro falhar
+        }
+      }
+      toast.success(`Banco de Produção limpo! ${apagados} de ${total} registros apagados.`);
+      setLimparDialogOpen(false);
+      setConfirmText('');
+    } catch (err) {
+      toast.error('Erro ao limpar: ' + err.message);
+    } finally {
+      setLimpando(false);
+      setLimparProgresso(0);
     }
   };
 
@@ -413,6 +455,83 @@ export default function BackupRestore() {
           {corrigindo ? 'Corrigindo...' : 'Corrigir Vínculos de Indicadores'}
         </Button>
       </div>
+
+      {/* LIMPAR BANCO DE PRODUÇÃO */}
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
+            <Trash2 className="w-5 h-5 text-red-700" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-red-800">Limpar Banco de Produção</p>
+            <p className="text-xs text-red-600">
+              Apaga TODOS os registros de Produção. Use antes de reimportar uma planilha completa.
+              Ação irreversível — exporte um backup antes.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={() => { setConfirmText(''); setLimparDialogOpen(true); }}
+          variant="outline"
+          className="w-full gap-2 border-red-400 text-red-700 hover:bg-red-100"
+        >
+          <Trash2 className="w-4 h-4" />
+          Limpar Banco de Produção
+        </Button>
+      </div>
+
+      {/* Dialog de confirmação de limpeza */}
+      <Dialog open={limparDialogOpen} onOpenChange={(o) => { if (!limpando) { setLimparDialogOpen(o); if (!o) setConfirmText(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="w-5 h-5" />
+              Apagar TODOS os registros de Produção?
+            </DialogTitle>
+            <DialogDescription>
+              Esta ação é <strong>irreversível</strong>. Todos os lançamentos de produção serão apagados
+              permanentemente do banco de dados. Certifique-se de ter exportado um backup antes de continuar.
+              <br /><br />
+              Para confirmar, digite <strong>LIMPAR</strong> no campo abaixo:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="Digite LIMPAR"
+              disabled={limpando}
+              className="w-full px-3 py-2 text-sm border border-red-300 rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-red-400"
+            />
+            {limpando && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2 text-xs text-red-700 mb-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Apagando registros... {limparProgresso}%
+                </div>
+                <div className="w-full h-2 bg-red-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-red-500 transition-all" style={{ width: `${limparProgresso}%` }} />
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setLimparDialogOpen(false); setConfirmText(''); }} disabled={limpando}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLimparProducao}
+              disabled={limpando || confirmText !== 'LIMPAR'}
+              className="gap-2"
+            >
+              {limpando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {limpando ? 'Apagando...' : 'Apagar Tudo'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de duplicatas */}
       <Dialog open={dupDialogOpen} onOpenChange={setDupDialogOpen}>

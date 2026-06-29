@@ -5,7 +5,8 @@ import { base44 } from '@/api/base44Client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Search, ShieldCheck, Settings, PenLine, HardDrive, BellRing } from 'lucide-react';
+import { FileText, Search, ShieldCheck, Settings, PenLine, HardDrive, BellRing, Loader2, Database } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import GestaoUsuarios from '@/components/admin/GestaoUsuarios';
@@ -30,10 +31,16 @@ function formatDate(value) {
 export default function Admin() {
   const { appUser } = useOutletContext();
 
-  const { data: logs = [] } = useQuery({
+  // Logs de auditoria carregam SOB DEMANDA (não automaticamente) para
+  // economizar a cota do Firestore. Só busca quando o usuário clica em
+  // "Carregar logs" na aba Auditoria. Limitado aos 500 mais recentes.
+  const [carregarLogs, setCarregarLogs] = useState(false);
+  const { data: logs = [], isFetching: logsCarregando } = useQuery({
     queryKey: ['audit-logs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date'),
+    queryFn: () => base44.entities.AuditLog.list('-created_date', 500),
     initialData: [],
+    enabled: carregarLogs,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: editRequests = [] } = useQuery({
@@ -111,9 +118,28 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4 space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar nos logs..." value={searchLog} onChange={e => setSearchLog(e.target.value)} className="pl-9" />
+          {!carregarLogs ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 bg-card rounded-xl border border-border">
+              <Database className="w-10 h-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground text-center max-w-sm">
+                Os logs de auditoria não são carregados automaticamente para economizar recursos.
+                Clique abaixo para carregar os 500 registros mais recentes.
+              </p>
+              <Button onClick={() => setCarregarLogs(true)} className="gap-2">
+                <Database className="w-4 h-4" /> Carregar Logs de Auditoria
+              </Button>
+            </div>
+          ) : (
+          <>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Buscar nos logs..." value={searchLog} onChange={e => setSearchLog(e.target.value)} className="pl-9" />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setCarregarLogs(false)} className="gap-1.5 text-xs">
+              Ocultar logs
+            </Button>
+            {logsCarregando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="overflow-x-auto">
@@ -148,6 +174,8 @@ export default function Admin() {
               </table>
             </div>
           </div>
+          </>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,20 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
 export function useRankingConfig() {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const unsub1 = base44.entities.RankingConfig.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['ranking-config'] });
-    });
-    const unsub2 = base44.entities.RankingComposicao.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['ranking-composicoes'] });
-    });
-    return () => { unsub1(); unsub2(); };
-  }, [queryClient]);
-
   const configQuery = useQuery({
     queryKey: ['ranking-config'],
     queryFn: async () => {
@@ -22,12 +9,14 @@ export function useRankingConfig() {
       return items[0] || null;
     },
     initialData: null,
+    staleTime: 1000 * 60 * 5,
   });
 
   const composicoesQuery = useQuery({
     queryKey: ['ranking-composicoes'],
     queryFn: () => base44.entities.RankingComposicao.filter({ status: 'ativo' }),
     initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 
   const modeloAtivo = configQuery.data?.valor || 'padrao';

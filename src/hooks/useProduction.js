@@ -1,11 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   collection,
   getDocs,
   query,
   where,
-  onSnapshot,
   orderBy
 } from 'firebase/firestore';
 
@@ -93,19 +91,6 @@ export function useIndicators() {
 ========================================================= */
 
 export function useProductions(periodo) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const qRef = query(
-      collection(db, 'Production'),
-      where('periodo', '==', periodo)
-    );
-    const unsub = onSnapshot(qRef, () => {
-      queryClient.invalidateQueries({ queryKey: ['productions'], exact: false });
-    });
-    return () => unsub();
-  }, [queryClient, periodo]);
-
   return useQuery({
     queryKey: ['productions', periodo],
     queryFn: async () => {
@@ -123,7 +108,9 @@ export function useProductions(periodo) {
       });
     },
     initialData: [],
-    staleTime: 0,
+    staleTime: 1000 * 60 * 5,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -132,17 +119,6 @@ export function useProductions(periodo) {
 ========================================================= */
 
 export function useAllProductions() {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'Production'), () => {
-      queryClient.invalidateQueries({ queryKey: ['all-productions'] });
-      queryClient.invalidateQueries({ queryKey: ['productions'] });
-      queryClient.invalidateQueries({ queryKey: ['hist-lancamento'] });
-    });
-    return () => unsub();
-  }, [queryClient]);
-
   return useQuery({
     queryKey: ['all-productions'],
     queryFn: async () => {
@@ -156,8 +132,10 @@ export function useAllProductions() {
       });
     },
     initialData: [],
-    staleTime: 0,
+    staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
   });
 }
 
