@@ -37,6 +37,24 @@ function normalizeMunicipio(m) {
 }
 
 /* =========================================================
+   UTIL: NORMALIZA UM REGISTRO DE PRODUÇÃO
+   Garante que pontuacao, quantidade e peso sejam SEMPRE
+   números. Os dados importados do Excel vêm como string
+   ('6' em vez de 6), o que zerava as somas do ranking.
+========================================================= */
+
+function normalizeProduction(doc) {
+  const d = doc.data();
+  return {
+    id: doc.id,
+    ...d,
+    pontuacao: Number(d.pontuacao) || 0,
+    quantidade: Number(d.quantidade) || 0,
+    peso: Number(d.peso) || 0,
+  };
+}
+
+/* =========================================================
    HOOK: ORGANIZATIONS
 ========================================================= */
 
@@ -96,7 +114,7 @@ export function useProductions(periodo) {
         where('periodo', '==', periodo)
       );
       const snap = await getDocs(qRef);
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snap.docs.map(normalizeProduction);
       return data.sort((a, b) => {
         const da = b.data || '';
         const dbd = a.data || '';
@@ -129,7 +147,7 @@ export function useAllProductions() {
     queryKey: ['all-productions'],
     queryFn: async () => {
       const snap = await getDocs(collection(db, 'Production'));
-      const records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const records = snap.docs.map(normalizeProduction);
       return records.sort((a, b) => {
         const da = b.data || '';
         const dbd = a.data || '';
@@ -142,6 +160,7 @@ export function useAllProductions() {
     gcTime: 1000 * 60 * 30,
   });
 }
+
 /* =========================================================
    HOOK: PRODUCTIONS PARA HISTÓRICO / RELATÓRIOS
    Busca só ao abrir a aba (sem tempo real) e apenas o
@@ -166,13 +185,14 @@ export function useProductionsHistorico({ periodo, useDateRange, dataInicio, dat
       }
 
       const snap = await getDocs(qRef);
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return snap.docs.map(normalizeProduction);
     },
     initialData: [],
     staleTime: 1000 * 60 * 2,   // reaproveita por 2 min ao navegar entre abas
     refetchOnMount: 'always',   // busca de novo toda vez que abre a aba
   });
 }
+
 /* =========================================================
    RANKING PADRÃO
 ========================================================= */
