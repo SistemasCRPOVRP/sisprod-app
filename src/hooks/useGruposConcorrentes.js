@@ -1,24 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
 export function useGruposConcorrentes(tipoNivel) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const unsub = base44.entities.RankingComposicao.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['grupos-concorrentes'] });
-      queryClient.invalidateQueries({ queryKey: ['ranking-composicoes'] });
-    });
-    return unsub;
-  }, [queryClient]);
-
+  // Sem listener em tempo real (economiza cota). Os grupos mudam pouco e
+  // são atualizados via invalidateQueries nas mutations (criar/editar/excluir).
   const query = useQuery({
     queryKey: ['grupos-concorrentes', tipoNivel],
     queryFn: () => tipoNivel
       ? base44.entities.RankingComposicao.filter({ tipo_nivel: tipoNivel })
       : base44.entities.RankingComposicao.list('-created_date'),
     initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 
   return { grupos: query.data, isLoading: query.isLoading };

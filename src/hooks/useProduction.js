@@ -60,12 +60,14 @@ export function useOrganizations() {
   return useQuery({
     queryKey: ['organizations'],
     queryFn: async () => {
-      const snap = await getDocs(
-        query(collection(db, 'Organization'), where('status', '==', 'ativo'))
-      );
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Busca todas e exclui só as explicitamente inativas (tolera as sem status).
+      const snap = await getDocs(collection(db, 'Organization'));
+      return snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(org => org.status !== 'inativo');
     },
     initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -77,12 +79,16 @@ export function useIndicators() {
   return useQuery({
     queryKey: ['indicators'],
     queryFn: async () => {
-      const snap = await getDocs(
-        query(collection(db, 'Indicator'), where('status', '==', 'ativo'))
-      );
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Busca TODOS os indicadores e filtra no código. Antes filtrava por
+      // status=='ativo' no Firestore, mas indicadores importados sem o campo
+      // 'status' ficavam invisíveis. Agora só exclui os explicitamente inativos.
+      const snap = await getDocs(collection(db, 'Indicator'));
+      return snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(ind => ind.status !== 'inativo');
     },
     initialData: [],
+    staleTime: 1000 * 60 * 5,
   });
 }
 

@@ -139,16 +139,34 @@ export default function Unidades() {
   }, []);
 
   // Salva o organograma no Firebase
+  // Salva o organograma garantindo UM ÚNICO registro (remove duplicados).
+  const persistirOrganograma = async (orgParaSalvar) => {
+    const valor = JSON.stringify(orgParaSalvar);
+    // Busca todos os registros 'organograma' e ordena pelo mais recente
+    const todos = await base44.entities.SystemConfig.filter({ chave: 'organograma' });
+    const ordenados = (todos || []).sort(
+      (a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0)
+    );
+    let idFinal;
+    if (ordenados.length > 0) {
+      idFinal = ordenados[0].id;
+      await base44.entities.SystemConfig.update(idFinal, { valor });
+      // Remove duplicados extras, deixando só um registro
+      for (let i = 1; i < ordenados.length; i++) {
+        try { await base44.entities.SystemConfig.delete(ordenados[i].id); } catch {}
+      }
+    } else {
+      const novo = await base44.entities.SystemConfig.create({ chave: 'organograma', valor });
+      idFinal = novo.id;
+    }
+    setConfigId(idFinal);
+    return idFinal;
+  };
+
   const handleSalvarOrganograma = async () => {
     setSalvando(true);
     try {
-      const valor = JSON.stringify(organograma);
-      if (configId) {
-        await base44.entities.SystemConfig.update(configId, { valor });
-      } else {
-        const novo = await base44.entities.SystemConfig.create({ chave: 'organograma', valor });
-        setConfigId(novo.id);
-      }
+      await persistirOrganograma(organograma);
       await base44.entities.AuditLog.create({
         usuario: appUser?.email || appUser?.id_funcional || 'sistema',
         acao: 'editou',
@@ -208,13 +226,7 @@ export default function Unidades() {
   setOrganograma(novoOrg);
   setSalvando(true);
   try {
-    const valor = JSON.stringify(novoOrg);
-    if (configId) {
-      await base44.entities.SystemConfig.update(configId, { valor });
-    } else {
-      const novo = await base44.entities.SystemConfig.create({ chave: 'organograma', valor });
-      setConfigId(novo.id);
-    }
+    await persistirOrganograma(novoOrg);
     await base44.entities.AuditLog.create({
       usuario: appUser?.email || appUser?.id_funcional || 'sistema',
       acao: 'editou',
