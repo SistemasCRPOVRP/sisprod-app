@@ -76,13 +76,14 @@ export default function Ranking() {
   // computeRankings espera (productions, level) — NÃO passar organizations.
   const ranking = useMemo(() => {
     if (isPersonalizado) {
-      return computeComposicaoRanking(productions, composicoes);
+      const tipoFiltro = grupoTipo === 'todos' ? null : grupoTipo;
+      return computeComposicaoRanking(productions, composicoes, tipoFiltro);
     }
     if (level === 'municipio') {
       return computeMunicipalRanking(productions);
     }
     return computeRankings(productions, level);
-  }, [isPersonalizado, productions, composicoes, level]);
+  }, [isPersonalizado, productions, composicoes, level, grupoTipo]);
 
   // Label do nível atual para exibição
   const levelLabel = { municipio: 'Município', bpm: 'BPM', companhia: 'CIA', pelotao: 'Pelotão', gpm: 'GPM' }[level] || level;

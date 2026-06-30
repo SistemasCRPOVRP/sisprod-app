@@ -256,34 +256,63 @@ export function computeMunicipalRanking(productions) {
    Usado por Dashboard.jsx e ImprimirRankingDialog.jsx
 ========================================================= */
 
-export function computeComposicaoRanking(productions, composicoes = []) {
-  // composicoes: array de { id, nome, organization_ids: [...], status }
+export function computeComposicaoRanking(productions, composicoes = [], tipoFiltro = null) {
+  // composicoes: array de grupos concorrentes. Cada grupo tem:
+  //   { id, nome, observacao, status, tipo_nivel, unidades_vinculadas: [{bpm, companhia, pelotao, gpm, nivel, municipio}] }
+  // Soma a pontuação de TODOS os lançamentos cujas unidades pertencem ao grupo.
   const ativas = composicoes.filter(c => c.status === 'ativo');
 
-  return ativas.map(comp => {
-    const ids = comp.organization_ids || [];
-    const prods = productions.filter(p => ids.includes(p.organization_id));
+  // Casa um lançamento (production) com uma unidade vinculada, respeitando o nível.
+  function lancamentoPertence(p, unidade) {
+    if (!unidade) return false;
+    const nivel = unidade.nivel;
+    if (nivel === 'gpm') {
+      return p.bpm === unidade.bpm && p.companhia === unidade.companhia
+          && p.pelotao === unidade.pelotao && p.gpm === unidade.gpm;
+    }
+    if (nivel === 'pelotao') {
+      return p.bpm === unidade.bpm && p.companhia === unidade.companhia
+          && p.pelotao === unidade.pelotao;
+    }
+    if (nivel === 'companhia') {
+      return p.bpm === unidade.bpm && p.companhia === unidade.companhia;
+    }
+    if (nivel === 'bpm') {
+      return p.bpm === unidade.bpm;
+    }
+    return false;
+  }
 
-    const score = prods.reduce((s, p) => s + (p.pontuacao || 0), 0);
-    const preventiva = prods.filter(p => p.categoria === 'Preventiva').reduce((s, p) => s + (p.pontuacao || 0), 0);
-    const repressiva = prods.filter(p => p.categoria === 'Repressiva').reduce((s, p) => s + (p.pontuacao || 0), 0);
-    const apreensao = prods.filter(p => p.categoria === 'Apreensão').reduce((s, p) => s + (p.pontuacao || 0), 0);
-    const atendimento = prods.filter(p => p.categoria === 'Atendimento').reduce((s, p) => s + (p.pontuacao || 0), 0);
-    const economia = prods.filter(p => p.categoria === 'Economia').reduce((s, p) => s + (p.pontuacao || 0), 0);
+  const resultado = ativas
+    .filter(comp => !tipoFiltro || comp.tipo_nivel === tipoFiltro)
+    .map(comp => {
+      const unidades = comp.unidades_vinculadas || [];
+      // Um lançamento entra se pertence a QUALQUER unidade vinculada do grupo
+      const prods = productions.filter(p => unidades.some(u => lancamentoPertence(p, u)));
 
-    return {
-      id: comp.id,
-      name: comp.nome,
-      municipio: '',
-      score,
-      preventiva,
-      repressiva,
-      apreensao,
-      atendimento,
-      economia,
-      organization_ids: ids,
-    };
-  }).sort((a, b) => {
+      const soma = (cat) => prods
+        .filter(p => !cat || p.categoria === cat)
+        .reduce((s, p) => s + (Number(p.pontuacao) || 0), 0);
+
+      const municipios = [...new Set(unidades.map(u => u.municipio).filter(Boolean))].join(', ');
+
+      return {
+        id: comp.id,
+        name: comp.nome,
+        observacao: comp.observacao || '',
+        municipios,
+        municipio: '',
+        score: soma(null),
+        preventiva: soma('Preventiva'),
+        repressiva: soma('Repressiva'),
+        apreensao: soma('Apreensão'),
+        atendimento: soma('Atendimento'),
+        economia: soma('Economia'),
+        tipo_nivel: comp.tipo_nivel,
+      };
+    });
+
+  return resultado.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     if (b.repressiva !== a.repressiva) return b.repressiva - a.repressiva;
     return b.apreensao - a.apreensao;
