@@ -6,7 +6,12 @@ export function useRankingConfig() {
     queryKey: ['ranking-config'],
     queryFn: async () => {
       const items = await base44.entities.RankingConfig.filter({ chave: 'modelo_ativo' });
-      return items[0] || null;
+      if (!items || items.length === 0) return null;
+      // Pode haver registros duplicados — pega sempre o mais recente (por data).
+      const ordenados = [...items].sort(
+        (a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0)
+      );
+      return ordenados[0];
     },
     initialData: null,
     staleTime: 1000 * 60 * 5,
@@ -35,11 +40,23 @@ export function useRankingConfigMutations() {
   const setModelo = useMutation({
     mutationFn: async (modelo) => {
       const items = await base44.entities.RankingConfig.filter({ chave: 'modelo_ativo' });
-      if (items.length > 0) {
-        return base44.entities.RankingConfig.update(items[0].id, { valor: modelo });
-      } else {
-        return base44.entities.RankingConfig.create({ chave: 'modelo_ativo', valor: modelo, descricao: 'Modelo de contabilização ativo para ranking e dashboard' });
+      if (items && items.length > 0) {
+        // Ordena por data — o mais recente é o "oficial" que será mantido e atualizado.
+        const ordenados = [...items].sort(
+          (a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0)
+        );
+        const principal = ordenados[0];
+        // Remove TODOS os duplicados extras (deixa só o principal), evitando inconsistência.
+        for (let i = 1; i < ordenados.length; i++) {
+          try { await base44.entities.RankingConfig.delete(ordenados[i].id); } catch {}
+        }
+        return base44.entities.RankingConfig.update(principal.id, { valor: modelo });
       }
+      return base44.entities.RankingConfig.create({
+        chave: 'modelo_ativo',
+        valor: modelo,
+        descricao: 'Modelo de contabilização ativo para ranking e dashboard',
+      });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranking-config'] }),
   });
