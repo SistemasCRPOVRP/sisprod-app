@@ -118,13 +118,15 @@ export default function Unidades() {
   useEffect(() => {
     const carregar = async () => {
       try {
-        const orgConfig = await base44.entities.SystemConfig.filter({ chave: 'organograma' }, '-created_date', 1);
+        const orgConfigAll = await base44.entities.SystemConfig.filter({ chave: 'organograma' });
+        const orgConfig = (orgConfigAll || []).sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
         if (orgConfig?.[0]?.valor) {
           const parsed = typeof orgConfig[0].valor === 'string' ? JSON.parse(orgConfig[0].valor) : orgConfig[0].valor;
           if (parsed?.nome) setOrganograma(parsed);
           setConfigId(orgConfig[0].id);
         }
-        const pdfConfig = await base44.entities.SystemConfig.filter({ chave: 'organograma_pdf' }, '-created_date', 1);
+        const pdfConfigAll = await base44.entities.SystemConfig.filter({ chave: 'organograma_pdf' });
+        const pdfConfig = (pdfConfigAll || []).sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
         if (pdfConfig?.[0]?.valor) {
           setPdfUrl(pdfConfig[0].valor);
           setPdfConfigId(pdfConfig[0].id);
