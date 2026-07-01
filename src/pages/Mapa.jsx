@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos } from '@/lib/utils';
+import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, getPeriodoComDados } from '@/lib/utils';
 import { useAllProductions } from '@/hooks/useProduction';
 import { BPMs, getCias, getPelotoes, getGPMs } from '@/lib/orgData';
 import { Map, Filter, X, LocateFixed } from 'lucide-react';
@@ -693,6 +693,16 @@ function MapaContent({ allProductions }) {
 export default function Mapa() {
   const location = useLocation();
   const { data: allProductions = [] } = useAllProductions();
+
+  // Abre no último trimestre COM dados (uma vez, ao carregar).
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = React.useState(false);
+  React.useEffect(() => {
+    if (!periodoAutoAjustado && allProductions && allProductions.length > 0) {
+      const pComDados = getPeriodoComDados(allProductions);
+      if (pComDados && pComDados !== periodo) setPeriodo(pComDados);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [allProductions, periodoAutoAjustado, periodo]);
   const isActive = location.pathname === '/mapa';
 
   // Quando não estamos na rota /mapa, renderiza null imediatamente

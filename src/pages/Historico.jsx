@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
 import { useProductionsHistorico } from '@/hooks/useProduction';
+import { usePeriodoInicial } from '@/hooks/usePeriodoInicial';
 import { Pencil, Trash2, Search, Lock, X, Droplets, Lightbulb, TrendingDown, TrendingUp, Download, FileText, Image, FileSpreadsheet, Printer, Loader2, ArrowUpDown, ArrowDownUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isAfter, subHours } from 'date-fns';
@@ -102,6 +103,15 @@ export default function Historico() {
   const queryClient = useQueryClient();
   const [exporting, setExporting] = useState(false);
   const [periodo, setPeriodo] = useState(getCurrentPeriodo());
+  // Detecta o último trimestre com dados e ajusta uma vez ao abrir a tela.
+  const periodoInicialDetectado = usePeriodoInicial();
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
+  useEffect(() => {
+    if (!periodoAutoAjustado && periodoInicialDetectado) {
+      if (periodoInicialDetectado !== periodo) setPeriodo(periodoInicialDetectado);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [periodoInicialDetectado, periodoAutoAjustado, periodo]);
   const [useDateRange, setUseDateRange] = useState(false);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');

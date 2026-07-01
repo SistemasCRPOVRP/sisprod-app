@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Target, Users, ShieldCheck, Zap, X, Layers, MapPin, User } from 'lucide-react';
-import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
+import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber, getPeriodoComDados } from '@/lib/utils';
 import {
   useAllProductions, useIndicators,
   computeRankings, computeCategoryBreakdown,
@@ -41,6 +41,18 @@ export default function Dashboard() {
   const [gpmFilter, setGpmFilter] = useState('');
 
   const { data: allProductionsRaw, isLoading } = useAllProductions();
+
+  // Abre no último trimestre COM dados (em vez do trimestre atual, que fica
+  // vazio no início). Roda uma vez, quando os dados carregam. Depois o usuário
+  // pode trocar o período livremente.
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
+  useEffect(() => {
+    if (!periodoAutoAjustado && allProductionsRaw && allProductionsRaw.length > 0) {
+      const pComDados = getPeriodoComDados(allProductionsRaw);
+      if (pComDados && pComDados !== periodo) setPeriodo(pComDados);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [allProductionsRaw, periodoAutoAjustado, periodo]);
   const { data: indicators } = useIndicators();
   const { modeloAtivo, composicoes } = useRankingConfig();
   const isPersonalizado = modeloAtivo === 'personalizado' && composicoes.length > 0;

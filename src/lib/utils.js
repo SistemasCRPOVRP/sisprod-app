@@ -40,3 +40,21 @@ export function formatNumber(num) {
   if (num == null || isNaN(n)) return '0';
   return n.toLocaleString('pt-BR');
 }
+
+// Retorna o período (trimestre) mais recente que possui lançamentos.
+// Usado para abrir Dashboard/Ranking/Histórico já no último trimestre com
+// dados, em vez de abrir no trimestre atual (que fica vazio no início).
+// Se não houver dados, retorna o período atual.
+export function getPeriodoComDados(productions) {
+  if (!productions || productions.length === 0) return getCurrentPeriodo();
+  const periodos = [...new Set(productions.map(p => p.periodo).filter(Boolean))];
+  if (periodos.length === 0) return getCurrentPeriodo();
+  // Ordena decrescente: "2026-T3" > "2026-T2" > "2025-T4" ...
+  periodos.sort((a, b) => {
+    const [anoA, tA] = a.split('-T').map(Number);
+    const [anoB, tB] = b.split('-T').map(Number);
+    if (anoA !== anoB) return anoB - anoA;
+    return tB - tA;
+  });
+  return periodos[0];
+}

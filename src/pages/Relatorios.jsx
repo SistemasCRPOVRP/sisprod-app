@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
 import { useProductionsHistorico, useIndicators } from '@/hooks/useProduction';
+import { usePeriodoInicial } from '@/hooks/usePeriodoInicial';
 import { BPMs, getCias, getPelotoes, getGPMs, MUNICIPIOS } from '@/lib/orgData';
 import { FileText, Download, Printer, FileSpreadsheet, Loader2, ExternalLink, X, BarChart3, List, TrendingUp, TrendingDown, Settings2, ChevronDown, ChevronUp, SlidersHorizontal, Layers, Trophy, Droplets, Lightbulb, ArrowDownUp, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -106,6 +107,15 @@ export default function Relatorios() {
   // Período
   const [useDateRange, setUseDateRange] = useState(false);
   const [periodo, setPeriodo] = useState(getCurrentPeriodo());
+  // Detecta o último trimestre com dados e ajusta uma vez ao abrir a tela.
+  const periodoInicialDetectado = usePeriodoInicial();
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
+  useEffect(() => {
+    if (!periodoAutoAjustado && periodoInicialDetectado) {
+      if (periodoInicialDetectado !== periodo) setPeriodo(periodoInicialDetectado);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [periodoInicialDetectado, periodoAutoAjustado, periodo]);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 

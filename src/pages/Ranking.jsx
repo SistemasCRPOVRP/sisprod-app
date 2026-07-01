@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber } from '@/lib/utils';
+import { getCurrentPeriodo, getPeriodoLabel, getAllPeriodos, formatNumber, getPeriodoComDados } from '@/lib/utils';
 import { useAllProductions, useOrganizations, computeRankings, computeMunicipalRanking, computeComposicaoRanking } from '@/hooks/useProduction';
 import { useRankingConfig } from '@/hooks/useRankingConfig';
 import { useOutletContext } from 'react-router-dom';
@@ -45,6 +45,16 @@ export default function Ranking() {
   const [grupoTipo, setGrupoTipo] = useState('todos');
   const [showImprimirDialog, setShowImprimirDialog] = useState(false);
   const { data: allProductions = [], isLoading, refetch } = useAllProductions();
+
+  // Abre no último trimestre COM dados (uma vez, ao carregar).
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
+  useEffect(() => {
+    if (!periodoAutoAjustado && allProductions && allProductions.length > 0) {
+      const pComDados = getPeriodoComDados(allProductions);
+      if (pComDados && pComDados !== periodo) setPeriodo(pComDados);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [allProductions, periodoAutoAjustado, periodo]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
