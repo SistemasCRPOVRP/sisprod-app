@@ -14,6 +14,11 @@ export function useRankingConfig() {
       return ordenados[0];
     },
     initialData: null,
+    // Marca o initialData como já desatualizado (timestamp 0) em vez de
+    // "agora" — sem isso, o valor null "contava" como dado fresco por 5min e
+    // o app inteiro abria sempre como se o modelo fosse "padrão" (OPMs
+    // individuais), mesmo com "Somente grupos" configurado e salvo.
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -21,6 +26,7 @@ export function useRankingConfig() {
     queryKey: ['ranking-composicoes'],
     queryFn: () => base44.entities.RankingComposicao.filter({ status: 'ativo' }),
     initialData: [],
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 5,
   });
 

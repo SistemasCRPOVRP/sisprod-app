@@ -10,6 +10,9 @@ export function useGruposConcorrentes(tipoNivel) {
       ? base44.entities.RankingComposicao.filter({ tipo_nivel: tipoNivel })
       : base44.entities.RankingComposicao.list('-created_date'),
     initialData: [],
+    // Sem isso, o array vazio do initialData "conta" como dado fresco por
+    // 5min e a lista de grupos aparece vazia mesmo já existindo grupos salvos.
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 5,
   });
 

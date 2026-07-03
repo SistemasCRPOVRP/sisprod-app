@@ -165,10 +165,14 @@ export default function Dashboard() {
     opm: 'Por OPM Individual',
   };
 
+  // Se abrir em "grupos" sem modelo personalizado ativo, o ranking cai para
+  // o cálculo por OPM (ver rankingData acima) — o título acompanha isso para
+  // não dizer "por Grupo" mostrando dados de OPM.
+  const rankingTitleOpm = `🏆 Ranking por ${{ bpm: 'BPM', companhia: 'CIA', pelotao: 'Pelotão', gpm: 'GPM' }[rankingLevel]}`;
   const rankingTitle = {
-    grupos: '🏆 Ranking por Grupo',
+    grupos: isPersonalizado ? '🏆 Ranking por Grupo' : rankingTitleOpm,
     municipio: '🏆 Ranking por Município',
-    opm: `🏆 Ranking por ${{ bpm: 'BPM', companhia: 'CIA', pelotao: 'Pelotão', gpm: 'GPM' }[rankingLevel]}`,
+    opm: rankingTitleOpm,
   }[visualizacao];
 
   return (
