@@ -3,6 +3,9 @@
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection,
   doc,
   addDoc,
@@ -32,7 +35,20 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+// Cache persistente local (IndexedDB) com suporte a múltiplas abas.
+// Reduz leituras cobradas: dados já vistos são servidos do cache do
+// dispositivo em vez de reler o Firestore, economizando a cota diária.
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  });
+} catch (err) {
+  console.warn('Cache persistente do Firestore indisponível, usando padrão:', err?.message);
+  firestoreDb = getFirestore(app);
+}
+export const db = firestoreDb;
 
 // =========================
 // UTIL: ORDER PARSER

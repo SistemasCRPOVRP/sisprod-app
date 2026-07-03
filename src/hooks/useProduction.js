@@ -67,7 +67,7 @@ export function useOrganizations() {
         .filter(org => org.status !== 'inativo');
     },
     initialData: [],
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 30,
   });
 }
 
@@ -88,7 +88,7 @@ export function useIndicators() {
         .filter(ind => ind.status !== 'inativo');
     },
     initialData: [],
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 30,
   });
 }
 
@@ -114,7 +114,7 @@ export function useProductions(periodo) {
       });
     },
     initialData: [],
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 30,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
@@ -138,8 +138,8 @@ export function useAllProductions() {
       });
     },
     initialData: [],
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });

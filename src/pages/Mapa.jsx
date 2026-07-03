@@ -420,6 +420,16 @@ function MapaContent({ allProductions }) {
   const [resetView, setResetView] = useState(0);
   const markerRefs = useRef({});
 
+  // Abre no último trimestre COM dados (uma vez, ao carregar).
+  const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
+  useEffect(() => {
+    if (!periodoAutoAjustado && allProductions && allProductions.length > 0) {
+      const pComDados = getPeriodoComDados(allProductions);
+      if (pComDados && pComDados !== periodo) setPeriodo(pComDados);
+      setPeriodoAutoAjustado(true);
+    }
+  }, [allProductions, periodoAutoAjustado, periodo]);
+
   const filtered = useMemo(() => allProductions.filter(p => {
     if (periodo && p.periodo !== periodo) return false;
     if (bpmFilter && p.bpm !== bpmFilter) return false;
@@ -693,16 +703,6 @@ function MapaContent({ allProductions }) {
 export default function Mapa() {
   const location = useLocation();
   const { data: allProductions = [] } = useAllProductions();
-
-  // Abre no último trimestre COM dados (uma vez, ao carregar).
-  const [periodoAutoAjustado, setPeriodoAutoAjustado] = React.useState(false);
-  React.useEffect(() => {
-    if (!periodoAutoAjustado && allProductions && allProductions.length > 0) {
-      const pComDados = getPeriodoComDados(allProductions);
-      if (pComDados && pComDados !== periodo) setPeriodo(pComDados);
-      setPeriodoAutoAjustado(true);
-    }
-  }, [allProductions, periodoAutoAjustado, periodo]);
   const isActive = location.pathname === '/mapa';
 
   // Quando não estamos na rota /mapa, renderiza null imediatamente
