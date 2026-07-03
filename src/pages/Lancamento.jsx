@@ -240,6 +240,8 @@ export default function Lancamento() {
     });
     queryClient.invalidateQueries({ queryKey: ['productions'] });
     queryClient.invalidateQueries({ queryKey: ['all-productions'] });
+    queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
+    queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
     setSessaoItens(prev => prev.map(i => i.id === sessaoEditDialog.id ? { ...i, quantidade, pontuacao } : i));
     setSessaoEditDialog(null);
     toast.success('Registro atualizado!');
@@ -257,6 +259,8 @@ export default function Lancamento() {
     });
     queryClient.invalidateQueries({ queryKey: ['productions'] });
     queryClient.invalidateQueries({ queryKey: ['all-productions'] });
+    queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
+    queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
     setSessaoItens(prev => prev.filter(i => i.id !== sessaoDeleteDialog.id));
     setSessaoDeleteDialog(null);
     toast.success('Registro excluído!');
@@ -511,6 +515,11 @@ export default function Lancamento() {
 
     queryClient.invalidateQueries({ queryKey: ['productions'] });
     queryClient.invalidateQueries({ queryKey: ['all-productions'] });
+    // Sem isso, o período mais recente detectado por Histórico/Relatórios
+    // (usePeriodoInicial) ficava até 10min desatualizado após um lançamento
+    // novo, deixando de mudar o trimestre automaticamente ao virar de período.
+    queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
+    queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
 
     const consumoAtualSessao = isAgua ? parseFloat(form.consumoAtualAgua) : isLuz ? parseFloat(form.consumoAtualLuz) : null;
     const consumoAnteriorSessao = isAgua ? parseFloat(form.consumoAnteriorAgua) : isLuz ? parseFloat(form.consumoAnteriorLuz) : null;
