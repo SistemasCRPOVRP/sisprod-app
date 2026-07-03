@@ -67,10 +67,14 @@ export function useOrganizations() {
         .filter(org => org.status !== 'inativo');
     },
     initialData: [],
+    // Marca o initialData como "desde sempre" desatualizado (timestamp 0), em
+    // vez de "agora". Assim a 1ª vez que a tela abrir ele busca de verdade
+    // (sem isso, o array vazio contava como fresco por 30min e a busca real
+    // nunca disparava). Mas SEM refetchOnMount:'always', que forçava reler a
+    // coleção inteira a cada navegação entre telas — lento e desnecessário,
+    // já que organizações mudam raramente.
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 30,
-    // Sem isso, o array vazio do initialData "conta" como dado fresco por até
-    // 30min e a busca real nunca dispara logo após abrir o app.
-    refetchOnMount: 'always',
   });
 }
 
@@ -91,10 +95,11 @@ export function useIndicators() {
         .filter(ind => ind.status !== 'inativo');
     },
     initialData: [],
+    // Ver comentário equivalente em useOrganizations: força buscar de verdade
+    // na 1ª vez, sem forçar reler a cada navegação (refetchOnMount:'always'
+    // deixava a troca de tela lenta ao reler Indicator toda vez).
+    initialDataUpdatedAt: 0,
     staleTime: 1000 * 60 * 30,
-    // Sem isso, o array vazio do initialData "conta" como dado fresco por até
-    // 30min e a busca real nunca dispara logo após abrir o app.
-    refetchOnMount: 'always',
   });
 }
 

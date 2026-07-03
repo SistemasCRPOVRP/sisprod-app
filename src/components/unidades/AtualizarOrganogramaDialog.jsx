@@ -117,31 +117,19 @@ function fileToBase64(file) {
   });
 }
 
-// ── Chama a API da Anthropic diretamente com o PDF em base64 ────────────────
+// ── Chama a função serverless /api/invocar-llm (mantém a chave da Anthropic
+//    segura no servidor — chamar a API diretamente do navegador falha, pois
+//    exige autenticação que não pode ser exposta no cliente) ────────────────
 async function invocarLLMComPDF(base64Data) {
-  const promptText = 'Voce e um especialista em organogramas militares da Brigada Militar do RS. '
-    + 'Analise o PDF do organograma e extraia TODA a estrutura hierarquica completa. '
-    + 'REGRAS: Identifique os niveis CRPM/Comando, BPM Batalhao, CIA Companhia, Pelotao, GPM. '
-    + 'Para cada unidade identifique o municipio/local sede. '
-    + 'Nao invente unidades que nao estejam no PDF. GPMs nao possuem filhos. '
-    + 'Retorne APENAS um JSON puro sem markdown com campos: nome, local, tipo e filhos. '
-    + 'Tipos validos: crpm, btl, cia, pel, gpm. Retorne APENAS o JSON.';
-
-  const docItem = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } };
-  const textItem = { type: 'text', text: promptText };
-  const userMessage = { role: 'user', content: [docItem, textItem] };
-  const requestBody = { model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [userMessage] };
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/invocar-llm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({ base64Data }),
   });
 
-  if (!response.ok) throw new Error('Erro ao chamar a API de IA');
   const data = await response.json();
-  const texto = data.content?.find(c => c.type === 'text')?.text || '';
-  return texto.replace(/```json|```/g, '').trim();
+  if (!response.ok) throw new Error(data?.error || 'Erro ao chamar a API de IA');
+  return data.result;
 }
 
 export default function AtualizarOrganogramaDialog({ open, onClose, pdfUrl, organogramaAtual, onConfirmar }) {
