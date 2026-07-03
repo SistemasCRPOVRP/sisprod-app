@@ -68,6 +68,9 @@ export function useOrganizations() {
     },
     initialData: [],
     staleTime: 1000 * 60 * 30,
+    // Sem isso, o array vazio do initialData "conta" como dado fresco por até
+    // 30min e a busca real nunca dispara logo após abrir o app.
+    refetchOnMount: 'always',
   });
 }
 
@@ -89,6 +92,9 @@ export function useIndicators() {
     },
     initialData: [],
     staleTime: 1000 * 60 * 30,
+    // Sem isso, o array vazio do initialData "conta" como dado fresco por até
+    // 30min e a busca real nunca dispara logo após abrir o app.
+    refetchOnMount: 'always',
   });
 }
 

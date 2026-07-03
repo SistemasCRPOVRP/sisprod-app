@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -152,6 +152,35 @@ export default function AtualizarOrganogramaDialog({ open, onClose, pdfUrl, orga
   const [erroMsg, setErroMsg] = useState('');
   const fileRef = useRef(null);
   const [pdfBase64, setPdfBase64] = useState(null);
+  const [carregandoPdfExistente, setCarregandoPdfExistente] = useState(false);
+
+  // Ao abrir o diálogo, se já existe um PDF salvo (o mesmo da aba "Ver PDF")
+  // e ainda não o temos em memória, busca e converte para base64 — assim o
+  // botão "Usar PDF já carregado" funciona sem exigir novo upload.
+  useEffect(() => {
+    if (!open || !pdfUrl || pdfBase64) return;
+    let cancelado = false;
+    setCarregandoPdfExistente(true);
+    (async () => {
+      try {
+        const response = await fetch(pdfUrl);
+        if (!response.ok) throw new Error('Falha ao baixar o PDF salvo');
+        const blob = await response.blob();
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        if (!cancelado) setPdfBase64(base64);
+      } catch (err) {
+        console.warn('Não foi possível carregar o PDF já salvo:', err?.message);
+      } finally {
+        if (!cancelado) setCarregandoPdfExistente(false);
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [open, pdfUrl, pdfBase64]);
 
   const iniciarProcessamento = async (base64Data) => {
     setEtapa('processando');
@@ -274,12 +303,14 @@ export default function AtualizarOrganogramaDialog({ open, onClose, pdfUrl, orga
                 </ul>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button onClick={processarPdfAtual} disabled={!pdfBase64}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all text-center ${pdfBase64 ? 'border-primary/40 hover:border-primary hover:bg-primary/5 cursor-pointer' : 'border-border opacity-50 cursor-not-allowed'}`}>
-                  <FileText className="w-8 h-8 text-primary" />
+                <button onClick={processarPdfAtual} disabled={!pdfBase64 || carregandoPdfExistente}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 transition-all text-center ${pdfBase64 && !carregandoPdfExistente ? 'border-primary/40 hover:border-primary hover:bg-primary/5 cursor-pointer' : 'border-border opacity-50 cursor-not-allowed'}`}>
+                  {carregandoPdfExistente ? <Loader2 className="w-8 h-8 text-primary animate-spin" /> : <FileText className="w-8 h-8 text-primary" />}
                   <div>
                     <p className="font-semibold text-sm">Usar PDF já carregado</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{pdfBase64 ? 'PDF disponível na sessão' : 'Nenhum PDF carregado'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {carregandoPdfExistente ? 'Carregando PDF salvo...' : pdfBase64 ? 'PDF disponível (o mesmo da aba "Ver PDF")' : 'Nenhum PDF carregado'}
+                    </p>
                   </div>
                 </button>
                 <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-primary/40 hover:border-primary hover:bg-primary/5 p-6 transition-all cursor-pointer text-center">
