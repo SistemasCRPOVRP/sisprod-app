@@ -171,7 +171,10 @@ export function useProductionsHistorico({ periodo, useDateRange, dataInicio, dat
       const snap = await getDocs(qRef);
       return snap.docs.map(normalizeProduction);
     },
-    initialData: [],
+    // Sem initialData: a queryKey muda a cada troca de período, e um valor
+    // inicial "pronto" (mesmo vazio) fazia o React Query considerar a nova
+    // chave já resolvida, sem nunca disparar o fetch real (bug observado no
+    // ajuste automático de período do Histórico/Relatórios).
     staleTime: 1000 * 60 * 2,   // reaproveita por 2 min ao navegar entre abas
     refetchOnMount: 'always',   // busca de novo toda vez que abre a aba
   });

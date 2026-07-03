@@ -10,9 +10,13 @@ import { getCurrentPeriodo } from '@/lib/utils';
  * em vez do trimestre atual (que fica vazio no início de cada trimestre).
  *
  * Custo de cota: 1 leitura por sessão (cacheado por 10 min).
+ *
+ * Retorna { periodo, pronto }. "pronto" só fica true quando a busca real
+ * terminou — sem initialData, para o chamador não confundir o placeholder
+ * (trimestre atual) com o resultado de verdade e travar o ajuste automático.
  */
 export function usePeriodoInicial() {
-  const { data: periodoComDados } = useQuery({
+  const { data: periodoComDados, isSuccess } = useQuery({
     queryKey: ['periodo-inicial'],
     queryFn: async () => {
       try {
@@ -33,10 +37,9 @@ export function usePeriodoInicial() {
       }
       return getCurrentPeriodo();
     },
-    initialData: getCurrentPeriodo(),
     staleTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
   });
 
-  return periodoComDados || getCurrentPeriodo();
+  return { periodo: periodoComDados || getCurrentPeriodo(), pronto: isSuccess };
 }

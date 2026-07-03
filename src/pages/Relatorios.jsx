@@ -108,14 +108,14 @@ export default function Relatorios() {
   const [useDateRange, setUseDateRange] = useState(false);
   const [periodo, setPeriodo] = useState(getCurrentPeriodo());
   // Detecta o último trimestre com dados e ajusta uma vez ao abrir a tela.
-  const periodoInicialDetectado = usePeriodoInicial();
+  const { periodo: periodoInicialDetectado, pronto: periodoInicialPronto } = usePeriodoInicial();
   const [periodoAutoAjustado, setPeriodoAutoAjustado] = useState(false);
   useEffect(() => {
-    if (!periodoAutoAjustado && periodoInicialDetectado) {
-      if (periodoInicialDetectado !== periodo) setPeriodo(periodoInicialDetectado);
+    if (!periodoAutoAjustado && periodoInicialPronto) {
+      if (periodoInicialDetectado && periodoInicialDetectado !== periodo) setPeriodo(periodoInicialDetectado);
       setPeriodoAutoAjustado(true);
     }
-  }, [periodoInicialDetectado, periodoAutoAjustado, periodo]);
+  }, [periodoInicialDetectado, periodoInicialPronto, periodoAutoAjustado, periodo]);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 
