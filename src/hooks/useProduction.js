@@ -283,6 +283,12 @@ export function computeComposicaoRanking(productions, composicoes = [], tipoFilt
   const ativas = composicoes.filter(c => c.status === 'ativo');
 
   // Casa um lançamento (production) com uma unidade vinculada, respeitando o nível.
+  // Unidades de nível pelotao/companhia/bpm só "capturam" lançamentos feitos
+  // DIRETO naquele nível (sem GPM/Pelotão/Cia mais específico atribuído) —
+  // ex.: o comandante do pelotão lança direto, sem escolher um GPM. Se o
+  // lançamento já tem um GPM específico, ele pertence só ao grupo daquele
+  // GPM, nunca também ao grupo do pelotão/cia "inteiro" que o contém —
+  // senão a mesma pontuação seria contada em dois grupos concorrentes.
   function lancamentoPertence(p, unidade) {
     if (!unidade) return false;
     const nivel = unidade.nivel;
@@ -291,14 +297,14 @@ export function computeComposicaoRanking(productions, composicoes = [], tipoFilt
           && p.pelotao === unidade.pelotao && p.gpm === unidade.gpm;
     }
     if (nivel === 'pelotao') {
-      return p.bpm === unidade.bpm && p.companhia === unidade.companhia
+      return !p.gpm && p.bpm === unidade.bpm && p.companhia === unidade.companhia
           && p.pelotao === unidade.pelotao;
     }
     if (nivel === 'companhia') {
-      return p.bpm === unidade.bpm && p.companhia === unidade.companhia;
+      return !p.pelotao && p.bpm === unidade.bpm && p.companhia === unidade.companhia;
     }
     if (nivel === 'bpm') {
-      return p.bpm === unidade.bpm;
+      return !p.companhia && p.bpm === unidade.bpm;
     }
     return false;
   }
