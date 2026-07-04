@@ -34,6 +34,13 @@ export function useRankingConfig() {
 
   return {
     modeloAtivo,
+    // "pronto" só fica true depois da busca REAL no Firestore (dataUpdatedAt
+    // > 0). "modeloAtivo" sozinho não serve como sinal de carregado, pois
+    // ele já nasce com o valor de fallback "padrao" (truthy) antes mesmo da
+    // 1ª busca terminar — o que fazia telas como o Dashboard travarem a
+    // visualização inicial usando esse valor de fallback, ignorando o
+    // "personalizado" real assim que ele chegava.
+    pronto: configQuery.dataUpdatedAt > 0,
     configRecord: configQuery.data,
     composicoes: composicoesQuery.data,
     isLoading: configQuery.isLoading || composicoesQuery.isLoading,

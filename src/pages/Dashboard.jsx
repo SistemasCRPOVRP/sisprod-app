@@ -54,21 +54,24 @@ export default function Dashboard() {
     }
   }, [allProductionsRaw, periodoAutoAjustado, periodo]);
   const { data: indicators } = useIndicators();
-  const { modeloAtivo, composicoes } = useRankingConfig();
+  const { modeloAtivo, composicoes, pronto: modeloAtivoPronto } = useRankingConfig();
   const isPersonalizado = modeloAtivo === 'personalizado' && composicoes.length > 0;
 
   // Visualização: 'grupos' | 'municipio' | 'opm'
   // Inicializa conforme modeloAtivo (carregado), mas permite alteração local
   const [visualizacao, setVisualizacao] = useState(() => getVisualizacaoInicial(modeloAtivo));
 
-  // Sincroniza ao carregar modeloAtivo pela primeira vez (quando ainda era null)
+  // Sincroniza ao carregar modeloAtivo pela primeira vez. Usa "pronto" (busca
+  // real concluída) em vez de checar só se modeloAtivo é truthy — modeloAtivo
+  // já nasce com o valor de fallback "padrao", que também é truthy, então
+  // travava a sincronização antes do valor real ("personalizado") chegar.
   const [visualizacaoSincronizada, setVisualizacaoSincronizada] = useState(false);
   useEffect(() => {
-    if (!visualizacaoSincronizada && modeloAtivo) {
+    if (!visualizacaoSincronizada && modeloAtivoPronto) {
       setVisualizacao(getVisualizacaoInicial(modeloAtivo));
       setVisualizacaoSincronizada(true);
     }
-  }, [modeloAtivo, visualizacaoSincronizada]);
+  }, [modeloAtivo, modeloAtivoPronto, visualizacaoSincronizada]);
 
   const [rankingLevel, setRankingLevel] = useState('gpm');
 
