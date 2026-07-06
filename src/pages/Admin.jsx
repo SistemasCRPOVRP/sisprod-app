@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Search, ShieldCheck, Settings, PenLine, HardDrive, BellRing, Loader2, Database, Download } from 'lucide-react';
+import { FileText, Search, ShieldCheck, Settings, PenLine, HardDrive, BellRing, Loader2, Database, Download, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -15,6 +15,7 @@ import SolicitacoesEdicao from '@/components/admin/SolicitacoesEdicao';
 import BackupRestore from '@/components/admin/BackupRestore';
 import GerenciarAvisos from '@/components/admin/GerenciarAvisos';
 import AtualizacaoSistemaAdmin from '@/components/admin/AtualizacaoSistemaAdmin';
+import PlanilhasHistoricasAdmin from '@/components/admin/PlanilhasHistoricasAdmin';
 
 // Converte qualquer formato de data do Firestore para string formatada
 function formatDate(value) {
@@ -97,6 +98,7 @@ export default function Admin() {
           <TabsTrigger value="backup"><HardDrive className="w-4 h-4 mr-1.5" /> Backup / Restore</TabsTrigger>
           <TabsTrigger value="avisos"><BellRing className="w-4 h-4 mr-1.5" /> Avisos</TabsTrigger>
           <TabsTrigger value="atualizacao"><Download className="w-4 h-4 mr-1.5" /> Atualização</TabsTrigger>
+          <TabsTrigger value="planilhas"><FileSpreadsheet className="w-4 h-4 mr-1.5" /> Planilhas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gestao" className="mt-4">
@@ -121,6 +123,10 @@ export default function Admin() {
 
         <TabsContent value="atualizacao" className="mt-4">
           <AtualizacaoSistemaAdmin />
+        </TabsContent>
+
+        <TabsContent value="planilhas" className="mt-4">
+          <PlanilhasHistoricasAdmin />
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4 space-y-4">

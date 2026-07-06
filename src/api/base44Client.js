@@ -236,6 +236,7 @@ const entities = {
   EditRequest: createEntity('EditRequest'),
   Indicator: createEntity('Indicator'),
   Organization: createEntity('Organization'),
+  PlanilhaHistorico: createEntity('PlanilhaHistorico'),
   Production: createEntity('Production'),
   RankingConfig: createEntity('RankingConfig'),
   RankingComposicao: createEntity('RankingComposicao'),
