@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44, uploadFile } from '@/api/base44Client';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, Link2, FileArchive, Save, Trash2, Loader2, Upload, Eraser } from 'lucide-react';
+import { Download, Link2, FileArchive, Save, Trash2, Loader2, Eraser } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CHAVES = {
@@ -41,17 +41,12 @@ async function excluirConfig(chave) {
 
 export default function AtualizacaoSistemaAdmin() {
   const queryClient = useQueryClient();
-  const fileRef = useRef(null);
   const [saving, setSaving] = useState(false);
-  const [uploadingApk, setUploadingApk] = useState(false);
-  const [removendoApk, setRemovendoApk] = useState(false);
   const [limpandoTudo, setLimpandoTudo] = useState(false);
   const [versao, setVersao] = useState('');
   const [link, setLink] = useState('');
   const [notas, setNotas] = useState('');
   const [apkUrl, setApkUrl] = useState('');
-  const [apkNome, setApkNome] = useState('');
-  const [apkErro, setApkErro] = useState('');
 
   const { data: configs = [], isLoading } = useQuery({
     queryKey: ['system-configs-atualizacao'],
@@ -78,61 +73,13 @@ export default function AtualizacaoSistemaAdmin() {
     setVersao(pegarValor(CHAVES.versao)?.valor || '');
     setLink(pegarValor(CHAVES.link)?.valor || '');
     setNotas(pegarValor(CHAVES.notas)?.valor || '');
-    const apkConfig = pegarValor(CHAVES.apkUrl);
-    setApkUrl(apkConfig?.valor || '');
-    setApkNome(apkConfig?.descricao || '');
+    setApkUrl(pegarValor(CHAVES.apkUrl)?.valor || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configs]);
 
   const atualizarListaApos = async () => {
     await queryClient.invalidateQueries({ queryKey: ['system-configs-atualizacao'] });
     await queryClient.invalidateQueries({ queryKey: ['atualizacao-sistema'] });
-  };
-
-  // O APK é salvo IMEDIATAMENTE após o upload (mesmo padrão do PDF do
-  // organograma em Unidades.jsx) — evita depender do admin lembrar de
-  // clicar em "Salvar" depois, que era a causa do APK não ficar gravado.
-  const handleUploadApk = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setApkErro('');
-    if (!file.name.toLowerCase().endsWith('.apk')) {
-      toast.error('Selecione um arquivo .apk válido');
-      if (fileRef.current) fileRef.current.value = '';
-      return;
-    }
-    setUploadingApk(true);
-    try {
-      const { file_url } = await uploadFile(file);
-      await persistirConfig(CHAVES.apkUrl, file_url, file.name);
-      setApkUrl(file_url);
-      setApkNome(file.name);
-      await atualizarListaApos();
-      toast.success('APK enviado e publicado com sucesso!');
-    } catch (err) {
-      const msg = err?.message || 'Erro desconhecido';
-      setApkErro(msg);
-      toast.error('Erro ao enviar o APK: ' + msg, { duration: 8000 });
-    } finally {
-      setUploadingApk(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  };
-
-  const handleRemoverApk = async () => {
-    if (!window.confirm('Remover o APK publicado? Os usuários não poderão mais baixá-lo.')) return;
-    setRemovendoApk(true);
-    try {
-      await excluirConfig(CHAVES.apkUrl);
-      setApkUrl('');
-      setApkNome('');
-      await atualizarListaApos();
-      toast.success('APK removido com sucesso!');
-    } catch (err) {
-      toast.error('Erro ao remover o APK: ' + (err?.message || ''));
-    } finally {
-      setRemovendoApk(false);
-    }
   };
 
   const handleSave = async () => {
@@ -142,6 +89,7 @@ export default function AtualizacaoSistemaAdmin() {
         persistirConfig(CHAVES.versao, versao.trim(), 'Versão mais recente disponível para atualização'),
         persistirConfig(CHAVES.link, link.trim(), 'Link externo de atualização (ex: loja de apps ou site)'),
         persistirConfig(CHAVES.notas, notas.trim(), 'Notas da atualização exibidas aos usuários'),
+        persistirConfig(CHAVES.apkUrl, apkUrl.trim(), 'Link direto para download do APK'),
       ]);
       await atualizarListaApos();
       toast.success('Atualização salva com sucesso!');
@@ -150,6 +98,13 @@ export default function AtualizacaoSistemaAdmin() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const removerCampo = async (chave, setter, label) => {
+    await excluirConfig(chave);
+    setter('');
+    await atualizarListaApos();
+    toast.success(`${label} removido(a) com sucesso!`);
   };
 
   const handleLimparTudo = async () => {
@@ -161,7 +116,6 @@ export default function AtualizacaoSistemaAdmin() {
       setLink('');
       setNotas('');
       setApkUrl('');
-      setApkNome('');
       await atualizarListaApos();
       toast.success('Atualização removida com sucesso!');
     } catch (err) {
@@ -214,7 +168,7 @@ export default function AtualizacaoSistemaAdmin() {
             {versao && (
               <Button
                 variant="ghost" size="icon"
-                onClick={async () => { await excluirConfig(CHAVES.versao); setVersao(''); await atualizarListaApos(); toast.success('Versão removida!'); }}
+                onClick={() => removerCampo(CHAVES.versao, setVersao, 'Versão')}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                 title="Remover versão salva"
               >
@@ -236,7 +190,7 @@ export default function AtualizacaoSistemaAdmin() {
             {link && (
               <Button
                 variant="ghost" size="icon"
-                onClick={async () => { await excluirConfig(CHAVES.link); setLink(''); await atualizarListaApos(); toast.success('Link removido!'); }}
+                onClick={() => removerCampo(CHAVES.link, setLink, 'Link')}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                 title="Remover link salvo"
               >
@@ -259,7 +213,7 @@ export default function AtualizacaoSistemaAdmin() {
             {notas && (
               <Button
                 variant="ghost" size="icon"
-                onClick={async () => { await excluirConfig(CHAVES.notas); setNotas(''); await atualizarListaApos(); toast.success('Notas removidas!'); }}
+                onClick={() => removerCampo(CHAVES.notas, setNotas, 'Notas')}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 self-start"
                 title="Remover notas salvas"
               >
@@ -270,36 +224,34 @@ export default function AtualizacaoSistemaAdmin() {
         </div>
 
         <div>
-          <Label className="flex items-center gap-1.5"><FileArchive className="w-3.5 h-3.5 text-muted-foreground" /> Arquivo APK</Label>
-          {apkUrl ? (
-            <div className="mt-1.5 flex items-center gap-2 bg-muted/40 border border-border rounded-lg px-3 py-2">
-              <FileArchive className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="text-xs flex-1 truncate">{apkNome || 'APK enviado'}</span>
+          <Label className="flex items-center gap-1.5"><FileArchive className="w-3.5 h-3.5 text-muted-foreground" /> Link do Arquivo APK</Label>
+          <div className="flex gap-2 mt-1.5">
+            <Input
+              value={apkUrl}
+              onChange={e => setApkUrl(e.target.value)}
+              placeholder="https://github.com/.../releases/download/.../SISPROD.apk"
+              className="flex-1"
+            />
+            {apkUrl && (
               <Button
-                variant="ghost" size="icon" onClick={handleRemoverApk} disabled={removendoApk}
-                className="h-7 w-7 text-destructive flex-shrink-0" title="Remover APK publicado"
+                variant="ghost" size="icon"
+                onClick={() => removerCampo(CHAVES.apkUrl, setApkUrl, 'APK')}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                title="Remover link do APK salvo"
               >
-                {removendoApk ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <Trash2 className="w-4 h-4" />
               </Button>
-            </div>
-          ) : (
-            <label className={`mt-1.5 flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 border-dashed border-primary/40 cursor-pointer text-xs font-semibold text-primary hover:bg-primary/5 transition-colors ${uploadingApk ? 'opacity-60 pointer-events-none' : ''}`}>
-              <Upload className="w-4 h-4" />
-              {uploadingApk ? 'Enviando...' : 'Selecionar arquivo .apk'}
-              <input ref={fileRef} type="file" accept=".apk" className="hidden" onChange={handleUploadApk} disabled={uploadingApk} />
-            </label>
-          )}
-          {apkErro && (
-            <p className="text-[11px] text-destructive bg-destructive/5 border border-destructive/20 rounded px-2 py-1.5 mt-1.5">
-              <strong>Falha no envio:</strong> {apkErro}
-            </p>
-          )}
-          <p className="text-[11px] text-muted-foreground mt-1">O APK é publicado assim que o envio terminar, sem precisar clicar em "Salvar".</p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Cole o link direto de download do .apk (ex: de um GitHub Release). O upload direto pelo
+            navegador não é usado porque o Cloudinary bloqueia arquivos .apk por segurança.
+          </p>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Salvando...' : 'Salvar Versão, Link e Notas'}
+          {saving ? 'Salvando...' : 'Salvar Atualização'}
         </Button>
       </div>
     </div>

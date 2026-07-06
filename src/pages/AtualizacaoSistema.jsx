@@ -50,7 +50,6 @@ export default function AtualizacaoSistema() {
   const link = linkConfig?.valor || '';
   const notas = notasConfig?.valor || '';
   const apkUrl = apkConfig?.valor || '';
-  const apkNome = apkConfig?.descricao || '';
   const atualizadoEm = formatDate(apkConfig?.updated_date || versaoConfig?.updated_date);
 
   const temAtualizacao = !!(apkUrl || link);
@@ -97,7 +96,7 @@ export default function AtualizacaoSistema() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               {apkUrl && (
                 <Button asChild className="gap-2 flex-1">
-                  <a href={apkUrl} download={apkNome || 'sisprod-atualizacao.apk'}>
+                  <a href={apkUrl} download="sisprod-atualizacao.apk">
                     <FileArchive className="w-4 h-4" /> Baixar APK
                   </a>
                 </Button>
