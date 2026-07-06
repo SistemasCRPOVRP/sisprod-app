@@ -75,10 +75,12 @@ export async function uploadFile(file) {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-  const isPDF = file.type === 'application/pdf';
-  const endpoint = isPDF
-    ? `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`
-    : `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+  // Imagens vão para /image/upload; qualquer outro tipo (PDF, APK, etc.)
+  // vai para /raw/upload, que aceita arquivos binários arbitrários.
+  const isImage = file.type.startsWith('image/');
+  const endpoint = isImage
+    ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+    : `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
 
   const formData = new FormData();
   formData.append('file', file);

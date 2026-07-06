@@ -19,6 +19,7 @@ import Mapa from '@/pages/Mapa';
 import Relatorios from '@/pages/Relatorios';
 import Creator from '@/pages/Creator';
 import GruposConcorrentes from '@/pages/GruposConcorrentes';
+import AtualizacaoSistema from '@/pages/AtualizacaoSistema';
 
 const AppRoutes = () => {
   const { isAppAuthenticated, isLoadingAppAuth } = useAppAuth();
@@ -57,6 +58,7 @@ const AppRoutes = () => {
         <Route path="/mapa" element={<Mapa />} />
         <Route path="/relatorios" element={<Relatorios />} />
         <Route path="/grupos-concorrentes" element={<GruposConcorrentes />} />
+        <Route path="/atualizacao" element={<AtualizacaoSistema />} />
         <Route path="/creator" element={<Creator />} />
         <Route path="/acesso" element={<Navigate to="/" replace />} />
       </Route>

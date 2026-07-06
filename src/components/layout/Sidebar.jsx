@@ -19,6 +19,7 @@ import {
   Crown,
   LogOut,
   UsersRound,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppAuth } from '@/lib/AppAuthContext';
@@ -34,6 +35,7 @@ const navItems = [
   { label: 'Mapa', icon: Map, path: '/mapa' },
   { label: 'Histórico', icon: History, path: '/historico' },
   { label: 'Relatórios', icon: FileText, path: '/relatorios' },
+  { label: 'Atualização do Sistema', icon: Download, path: '/atualizacao' },
   { label: 'Indicadores', icon: Target, path: '/indicadores', appPerfis: ['administrador', 'comandante_crpm'], roles: ['admin', 'planejamento'] },
   { label: 'Unidades', icon: Building2, path: '/unidades', appPerfis: ['administrador', 'comandante_crpm'], roles: ['admin', 'planejamento'] },
   { label: 'Grupos Concorrentes', icon: UsersRound, path: '/grupos-concorrentes', appPerfis: ['administrador'], roles: ['admin'] },

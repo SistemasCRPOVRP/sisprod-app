@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
   LayoutDashboard, ClipboardPlus, Trophy, History, Target, Building2,
-  Map, FileText, Home, Check, Search, LayoutGrid, X, ChevronRight,
+  Map, FileText, Home, Check, Search, LayoutGrid, X, ChevronRight, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ const ABAS_CONFIG = [
   { path: '/relatorios', label: 'Relatórios', icon: FileText },
   { path: '/indicadores', label: 'Indicadores', icon: Target },
   { path: '/unidades', label: 'Unidades', icon: Building2 },
+  { path: '/atualizacao', label: 'Atualização do Sistema', icon: Download },
 ];
 
 const PERFIS_LABEL = {
