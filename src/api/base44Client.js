@@ -89,7 +89,17 @@ export async function uploadFile(file) {
 
   const response = await fetch(endpoint, { method: 'POST', body: formData });
 
-  if (!response.ok) throw new Error('Erro ao fazer upload do arquivo');
+  if (!response.ok) {
+    // Repassa a mensagem real do Cloudinary (ex.: formato não permitido pelo
+    // upload preset) em vez de um erro genérico — essencial pra diagnosticar
+    // uploads de tipos novos (como .apk) que o preset pode não aceitar ainda.
+    let mensagem = 'Erro ao fazer upload do arquivo';
+    try {
+      const errData = await response.json();
+      if (errData?.error?.message) mensagem = errData.error.message;
+    } catch {}
+    throw new Error(mensagem);
+  }
 
   const data = await response.json();
   return { file_url: data.secure_url };

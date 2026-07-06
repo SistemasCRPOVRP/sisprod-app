@@ -51,6 +51,7 @@ export default function AtualizacaoSistemaAdmin() {
   const [notas, setNotas] = useState('');
   const [apkUrl, setApkUrl] = useState('');
   const [apkNome, setApkNome] = useState('');
+  const [apkErro, setApkErro] = useState('');
 
   const { data: configs = [], isLoading } = useQuery({
     queryKey: ['system-configs-atualizacao'],
@@ -94,6 +95,7 @@ export default function AtualizacaoSistemaAdmin() {
   const handleUploadApk = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setApkErro('');
     if (!file.name.toLowerCase().endsWith('.apk')) {
       toast.error('Selecione um arquivo .apk válido');
       if (fileRef.current) fileRef.current.value = '';
@@ -108,7 +110,9 @@ export default function AtualizacaoSistemaAdmin() {
       await atualizarListaApos();
       toast.success('APK enviado e publicado com sucesso!');
     } catch (err) {
-      toast.error('Erro ao enviar o APK: ' + (err?.message || ''));
+      const msg = err?.message || 'Erro desconhecido';
+      setApkErro(msg);
+      toast.error('Erro ao enviar o APK: ' + msg, { duration: 8000 });
     } finally {
       setUploadingApk(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -284,6 +288,11 @@ export default function AtualizacaoSistemaAdmin() {
               {uploadingApk ? 'Enviando...' : 'Selecionar arquivo .apk'}
               <input ref={fileRef} type="file" accept=".apk" className="hidden" onChange={handleUploadApk} disabled={uploadingApk} />
             </label>
+          )}
+          {apkErro && (
+            <p className="text-[11px] text-destructive bg-destructive/5 border border-destructive/20 rounded px-2 py-1.5 mt-1.5">
+              <strong>Falha no envio:</strong> {apkErro}
+            </p>
           )}
           <p className="text-[11px] text-muted-foreground mt-1">O APK é publicado assim que o envio terminar, sem precisar clicar em "Salvar".</p>
         </div>
