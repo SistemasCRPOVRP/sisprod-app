@@ -413,7 +413,13 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
     queryKey: ['hist-lancamento', orgId, modo, dataSelecionada, dataInicio, dataFim],
     queryFn: async () => {
       if (!orgId) return [];
-      const all = await base44.entities.Production.filter({ organization_id: orgId }, '-data', 99999);
+      // Limite abaixo de 10000, que é o máximo aceito pelo Firestore em uma
+      // única consulta — 99999 fazia a consulta inteira falhar (silenciosamente,
+      // sem mostrar erro), fazendo parecer que não havia lançamentos no período.
+      // Sem orderBy no Firestore (evita exigir índice composto
+      // organization_id+data, que não existe) — ordena por data no código.
+      const raw = await base44.entities.Production.filter({ organization_id: orgId }, undefined, 9999);
+      const all = [...raw].sort((a, b) => (b.data || '').localeCompare(a.data || ''));
       if (modo === 'data') return all.filter(r => r.data === dataSelecionada);
       return all.filter(r => {
         if (dataInicio && r.data < dataInicio) return false;
