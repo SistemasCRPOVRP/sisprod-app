@@ -185,17 +185,26 @@ export default function BackupRestore() {
     }
   };
 
-  // Apaga TODOS os registros da coleção Production. Operação destrutiva e
-  // irreversível — exige digitar "LIMPAR" para confirmar. Use antes de
-  // reimportar uma planilha completa do Base44 na virada do sistema.
+  // Apaga TODOS os registros das coleções Production e AuditLog. Operação
+  // destrutiva e irreversível — exige digitar "LIMPAR" para confirmar. Use
+  // antes de reimportar uma planilha completa do Base44 na virada do sistema,
+  // ou periodicamente para esvaziar o banco — esses dados ficam preservados
+  // nas planilhas trimestrais (backup) antes de serem apagados.
   const handleLimparProducao = async () => {
     setLimpando(true);
     setLimparProgresso(0);
     try {
-      const registros = await base44.entities.Production.listAll('-created_date');
+      const [producaoRegs, auditoriaRegs] = await Promise.all([
+        base44.entities.Production.listAll('-created_date'),
+        base44.entities.AuditLog.listAll('-created_date'),
+      ]);
+      const registros = [
+        ...producaoRegs.map(r => ({ entidade: 'Production', id: r.id })),
+        ...auditoriaRegs.map(r => ({ entidade: 'AuditLog', id: r.id })),
+      ];
       const total = registros.length;
       if (total === 0) {
-        toast.info('Não há registros de Produção para apagar.');
+        toast.info('Não há registros de Produção ou Auditoria para apagar.');
         setLimpando(false);
         setLimparDialogOpen(false);
         return;
@@ -203,7 +212,7 @@ export default function BackupRestore() {
       let apagados = 0;
       for (const r of registros) {
         try {
-          await base44.entities.Production.delete(r.id);
+          await base44.entities[r.entidade].delete(r.id);
           apagados++;
           if (apagados % 50 === 0 || apagados === total) {
             setLimparProgresso(Math.round((apagados / total) * 100));
@@ -212,7 +221,7 @@ export default function BackupRestore() {
           // continua mesmo se um registro falhar
         }
       }
-      toast.success(`Banco de Produção limpo! ${apagados} de ${total} registros apagados.`);
+      toast.success(`Produção e Auditoria limpos! ${apagados} de ${total} registros apagados.`);
       setLimparDialogOpen(false);
       setConfirmText('');
     } catch (err) {
@@ -493,17 +502,18 @@ export default function BackupRestore() {
         </Button>
       </div>
 
-      {/* LIMPAR BANCO DE PRODUÇÃO */}
+      {/* LIMPAR BANCO DE PRODUÇÃO E AUDITORIA */}
       <div className="rounded-xl border border-red-200 bg-red-50 p-5 space-y-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
             <Trash2 className="w-5 h-5 text-red-700" />
           </div>
           <div>
-            <p className="font-semibold text-sm text-red-800">Limpar Banco de Produção</p>
+            <p className="font-semibold text-sm text-red-800">Limpar Produção e Auditoria</p>
             <p className="text-xs text-red-600">
-              Apaga TODOS os registros de Produção. Use antes de reimportar uma planilha completa.
-              Ação irreversível — exporte um backup antes.
+              Apaga TODOS os registros de Produção e de Auditoria (AuditLog). Os logs de auditoria acumulam
+              rápido e em grande volume — use para esvaziar o banco periodicamente, já que esses dados ficam
+              preservados nas planilhas trimestrais salvas no backup. Ação irreversível — exporte um backup antes.
             </p>
           </div>
         </div>
@@ -513,7 +523,7 @@ export default function BackupRestore() {
           className="w-full gap-2 border-red-400 text-red-700 hover:bg-red-100"
         >
           <Trash2 className="w-4 h-4" />
-          Limpar Banco de Produção
+          Limpar Produção e Auditoria
         </Button>
       </div>
 
@@ -523,11 +533,12 @@ export default function BackupRestore() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-700">
               <AlertTriangle className="w-5 h-5" />
-              Apagar TODOS os registros de Produção?
+              Apagar TODOS os registros de Produção e Auditoria?
             </DialogTitle>
             <DialogDescription>
-              Esta ação é <strong>irreversível</strong>. Todos os lançamentos de produção serão apagados
-              permanentemente do banco de dados. Certifique-se de ter exportado um backup antes de continuar.
+              Esta ação é <strong>irreversível</strong>. Todos os lançamentos de produção e todos os logs de
+              auditoria serão apagados permanentemente do banco de dados. Certifique-se de ter exportado um
+              backup antes de continuar.
               <br /><br />
               Para confirmar, digite <strong>LIMPAR</strong> no campo abaixo:
             </DialogDescription>
