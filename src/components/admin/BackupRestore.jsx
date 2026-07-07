@@ -27,6 +27,43 @@ function serializeCell(val) {
   return val;
 }
 
+// Ordem fixa de colunas apenas para a EXPORTAÇÃO em Excel (Backup). Não afeta
+// o banco de dados, os modelos, consultas ou qualquer outra parte do sistema
+// — é só a ordem em que as colunas já existentes aparecem no arquivo gerado.
+// Campos que não constam nesta lista (ex.: legados ou futuros) continuam
+// aparecendo normalmente, apenas deslocados para o final da planilha.
+const ORDEM_COLUNAS_EXPORTACAO = {
+  Production: [
+    'id', 'data', 'periodo', 'bpm', 'organization_name', 'companhia', 'pelotao',
+    'gpm', 'municipio', 'organization_id', 'lancado_por_nome', 'lancado_por',
+    'categoria', 'indicator_name', 'quantidade', 'peso', 'pontuacao', 'anexo_url',
+    'observacao', 'created_date', 'updated_date', 'indicator_id', 'created_by_id',
+    'created_by', 'is_sample',
+  ],
+  AccessRequest: [
+    'id', 'nome_completo', 'id_funcional', 'telefone', 'email', 'unidade_lotacao',
+    'funcao', 'observacao_admin', 'status', 'tipo', 'created_date', 'updated_date',
+    'created_by_id', 'created_by', 'is_sample',
+  ],
+  AppUser: [
+    'id', 'nome_completo', 'id_funcional', 'telefone', 'email', 'funcao',
+    'senha_hash', 'perfil', 'organization_id', 'bpm', 'companhia', 'pelotao',
+    'gpm', 'municipio', 'organization_name', 'abas_permitidas', 'status',
+    'created_date', 'updated_date', 'created_by_id', 'created_by', 'is_sample',
+  ],
+};
+
+// Reordena os cabeçalhos de exportação conforme ORDEM_COLUNAS_EXPORTACAO,
+// preservando qualquer coluna extra (não listada) ao final, na ordem em que
+// já apareceria. Para bancos sem ordem definida, retorna os headers originais.
+function ordenarColunasExportacao(dbKey, headersOriginais) {
+  const ordemFixa = ORDEM_COLUNAS_EXPORTACAO[dbKey];
+  if (!ordemFixa) return headersOriginais;
+  const naOrdem = ordemFixa.filter(h => headersOriginais.includes(h));
+  const extras = headersOriginais.filter(h => !ordemFixa.includes(h));
+  return [...naOrdem, ...extras];
+}
+
 function recordsEqual(a, b) {
   const ignore = new Set(['id', 'created_date', 'updated_date', 'created_by_id']);
   const keysA = Object.keys(a).filter(k => !ignore.has(k));
@@ -90,7 +127,7 @@ export default function BackupRestore() {
           XLSX.utils.book_append_sheet(wb, ws, db.key.substring(0, 31));
           continue;
         }
-        const headers = Object.keys(records[0]);
+        const headers = ordenarColunasExportacao(db.key, Object.keys(records[0]));
         const rows = records.map(r => headers.map(h => serializeCell(r[h])));
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
         XLSX.utils.book_append_sheet(wb, ws, db.key.substring(0, 31));
