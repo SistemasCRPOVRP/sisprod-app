@@ -117,7 +117,7 @@ function formatQtdExibicao(p) {
 }
 
 // Dialog de edição completo (data, indicador, quantidade, observação)
-function EditDialog({ record, appUser, indicators, onClose, onSaved }) {
+function EditDialog({ record, appUser, indicators, onClose, onSaved, onRecordUpdated }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -187,6 +187,7 @@ function EditDialog({ record, appUser, indicators, onClose, onSaved }) {
     });
     setSaving(false);
     toast.success('Registro atualizado com sucesso!');
+    onRecordUpdated?.(updatedRecord);
     onSaved?.();
     onClose();
   };
@@ -389,7 +390,7 @@ function RequestDialog({ record, appUser, orgName, onClose, onSaved }) {
   );
 }
 
-export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultOpen = false, hideToggle = false }) {
+export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultOpen = false, hideToggle = false, onRecordUpdated, onRecordDeleted }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(defaultOpen);
   const [modo, setModo] = useState('data');
@@ -484,6 +485,7 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
       registro_id: deleteDialog.id,
       detalhe: `Excluiu ${deleteDialog.indicator_name} de ${deleteDialog.organization_name} (${deleteDialog.data})`,
     });
+    onRecordDeleted?.(deleteDialog.id);
     setDeleteDialog(null);
     setSaving(false);
     toast.success('Registro excluído!');
@@ -720,6 +722,7 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
           indicators={indicators}
           onClose={() => setEditDialog(null)}
           onSaved={refetch}
+          onRecordUpdated={onRecordUpdated}
         />
       )}
 

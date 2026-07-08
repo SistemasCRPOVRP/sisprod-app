@@ -242,6 +242,10 @@ export default function Lancamento() {
     queryClient.invalidateQueries({ queryKey: ['all-productions'] });
     queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
     queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
+    // Sem isso, o painel "Consultar Lançamentos Anteriores" (mesma tela) ficava
+    // mostrando o valor antigo até um refresh manual, mesmo editando o mesmo
+    // lançamento aqui na sessão.
+    queryClient.invalidateQueries({ queryKey: ['hist-lancamento'] });
     setSessaoItens(prev => prev.map(i => i.id === sessaoEditDialog.id ? { ...i, quantidade, pontuacao } : i));
     setSessaoEditDialog(null);
     toast.success('Registro atualizado!');
@@ -261,6 +265,7 @@ export default function Lancamento() {
     queryClient.invalidateQueries({ queryKey: ['all-productions'] });
     queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
     queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
+    queryClient.invalidateQueries({ queryKey: ['hist-lancamento'] });
     setSessaoItens(prev => prev.filter(i => i.id !== sessaoDeleteDialog.id));
     setSessaoDeleteDialog(null);
     toast.success('Registro excluído!');
@@ -520,6 +525,9 @@ export default function Lancamento() {
     // novo, deixando de mudar o trimestre automaticamente ao virar de período.
     queryClient.invalidateQueries({ queryKey: ['periodo-inicial'] });
     queryClient.invalidateQueries({ queryKey: ['hist-productions'] });
+    // Sem isso, um lançamento novo só aparecia em "Consultar Lançamentos
+    // Anteriores" depois de um refresh manual da busca.
+    queryClient.invalidateQueries({ queryKey: ['hist-lancamento'] });
 
     const consumoAtualSessao = isAgua ? parseFloat(form.consumoAtualAgua) : isLuz ? parseFloat(form.consumoAtualLuz) : null;
     const consumoAnteriorSessao = isAgua ? parseFloat(form.consumoAnteriorAgua) : isLuz ? parseFloat(form.consumoAnteriorLuz) : null;
@@ -733,6 +741,14 @@ export default function Lancamento() {
               orgName={buildOrgName()}
               defaultOpen={true}
               hideToggle={true}
+              onRecordUpdated={(rec) => setSessaoItens(prev => prev.map(i => i.id === rec.id ? {
+                ...i,
+                indicador: rec.indicator_name,
+                categoria: rec.categoria,
+                quantidade: rec.quantidade,
+                pontuacao: rec.pontuacao,
+              } : i))}
+              onRecordDeleted={(id) => setSessaoItens(prev => prev.filter(i => i.id !== id))}
             />
           </motion.div>
         )}
@@ -997,9 +1013,13 @@ export default function Lancamento() {
         </DialogContent>
       </Dialog>
 
-      {/* ── BLOCO 3: Histórico da Sessão ── */}
+      {/* ── BLOCO 3: Histórico da Sessão ──
+          Só aparece junto do formulário de "Novo Lançamento". Enquanto o
+          usuário está em "Consultar Lançamentos Anteriores", os mesmos
+          registros já aparecem naquela lista — mostrar os dois ao mesmo
+          tempo dava a impressão de o lançamento estar duplicado na tela. */}
       <AnimatePresence>
-        {sessaoItens.length > 0 && (
+        {painelAtivo === 'lancamento' && sessaoItens.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
             <div className="bg-card rounded-xl border border-border overflow-hidden">
               <div className="px-4 py-3 bg-muted/40 border-b border-border flex items-center justify-between">
