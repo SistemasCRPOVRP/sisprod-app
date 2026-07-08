@@ -22,7 +22,7 @@ const ABAS_CONFIG = [
   { path: '/indicadores', label: 'Indicadores', icon: Target },
   { path: '/unidades', label: 'Unidades', icon: Building2 },
   { path: '/atualizacao', label: 'Atualização do Sistema', icon: Download },
-  { path: '/planilhas', label: 'Planilhas Trimestrais', icon: FileSpreadsheet },
+  { path: '/planilhas', label: 'Backups Trimestrais', icon: FileSpreadsheet },
 ];
 
 const PERFIS_LABEL = {

@@ -83,7 +83,7 @@ export default function PlanilhasHistoricasAdmin() {
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
             Cadastre links de planilhas (ex: Google Drive) para cada trimestre anterior. Todos os usuários
-            verão essa lista na aba "Planilhas Trimestrais" e poderão baixar.
+            verão essa lista na aba "Backups Trimestrais" e poderão baixar.
           </p>
         </div>
         <Button onClick={openNew} size="sm" className="gap-1.5 flex-shrink-0"><Plus className="w-3.5 h-3.5" /> Novo</Button>

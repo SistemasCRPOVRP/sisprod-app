@@ -32,7 +32,7 @@ export default function PlanilhasHistoricas() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <FileSpreadsheet className="w-6 h-6 text-primary" /> Planilhas Trimestrais
+          <FileSpreadsheet className="w-6 h-6 text-primary" /> Backups Trimestrais
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Baixe as planilhas com os dados de produtividade de trimestres anteriores

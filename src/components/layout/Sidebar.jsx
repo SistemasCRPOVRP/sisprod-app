@@ -37,7 +37,7 @@ const navItems = [
   { label: 'Histórico', icon: History, path: '/historico' },
   { label: 'Relatórios', icon: FileText, path: '/relatorios' },
   { label: 'Atualização do Sistema', icon: Download, path: '/atualizacao' },
-  { label: 'Planilhas Trimestrais', icon: FileSpreadsheet, path: '/planilhas' },
+  { label: 'Backups Trimestrais', icon: FileSpreadsheet, path: '/planilhas' },
   { label: 'Indicadores', icon: Target, path: '/indicadores', appPerfis: ['administrador', 'comandante_crpm'], roles: ['admin', 'planejamento'] },
   { label: 'Unidades', icon: Building2, path: '/unidades', appPerfis: ['administrador', 'comandante_crpm'], roles: ['admin', 'planejamento'] },
   { label: 'Grupos Concorrentes', icon: UsersRound, path: '/grupos-concorrentes', appPerfis: ['administrador'], roles: ['admin'] },

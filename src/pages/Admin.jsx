@@ -98,7 +98,7 @@ export default function Admin() {
           <TabsTrigger value="backup"><HardDrive className="w-4 h-4 mr-1.5" /> Backup / Restore</TabsTrigger>
           <TabsTrigger value="avisos"><BellRing className="w-4 h-4 mr-1.5" /> Avisos</TabsTrigger>
           <TabsTrigger value="atualizacao"><Download className="w-4 h-4 mr-1.5" /> Atualização</TabsTrigger>
-          <TabsTrigger value="planilhas"><FileSpreadsheet className="w-4 h-4 mr-1.5" /> Planilhas</TabsTrigger>
+          <TabsTrigger value="planilhas"><FileSpreadsheet className="w-4 h-4 mr-1.5" /> Backups Trimestrais</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gestao" className="mt-4">
