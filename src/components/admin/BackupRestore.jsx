@@ -64,15 +64,39 @@ function ordenarColunasExportacao(dbKey, headersOriginais) {
   return [...naOrdem, ...extras];
 }
 
+// Serializa objetos/arrays de forma estável (chaves ordenadas), para que a
+// mesma informação sempre gere o mesmo texto independente da ordem em que as
+// chaves foram inseridas (ex.: um registro salvo direto no banco vs. o mesmo
+// registro lido de volta de uma planilha Excel podem ter ordem diferente).
+function stableStringify(val) {
+  if (Array.isArray(val)) return '[' + val.map(stableStringify).join(',') + ']';
+  if (val && typeof val === 'object') {
+    return '{' + Object.keys(val).sort().map(k => JSON.stringify(k) + ':' + stableStringify(val[k])).join(',') + '}';
+  }
+  return JSON.stringify(val ?? null);
+}
+
+// Campos vindos de planilha Excel chegam como texto mesmo quando representam
+// um objeto/array (ex.: "[{...}]"). Reconverte para comparar o conteúdo real,
+// não o texto bruto.
+function normalizeValue(v) {
+  if (typeof v === 'string' && (v.startsWith('{') || v.startsWith('['))) {
+    try { return JSON.parse(v); } catch { return v; }
+  }
+  return v;
+}
+
 function recordsEqual(a, b) {
   const ignore = new Set(['id', 'created_date', 'updated_date', 'created_by_id']);
   const keysA = Object.keys(a).filter(k => !ignore.has(k));
   const keysB = Object.keys(b).filter(k => !ignore.has(k));
   const allKeys = new Set([...keysA, ...keysB]);
   for (const k of allKeys) {
-    const va = typeof a[k] === 'object' ? JSON.stringify(a[k]) : String(a[k] ?? '');
-    const vb = typeof b[k] === 'object' ? JSON.stringify(b[k]) : String(b[k] ?? '');
-    if (va !== vb) return false;
+    const va = normalizeValue(a[k]);
+    const vb = normalizeValue(b[k]);
+    const sa = va && typeof va === 'object' ? stableStringify(va) : String(va ?? '');
+    const sb = vb && typeof vb === 'object' ? stableStringify(vb) : String(vb ?? '');
+    if (sa !== sb) return false;
   }
   return true;
 }
