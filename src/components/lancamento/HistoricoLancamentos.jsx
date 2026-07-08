@@ -157,14 +157,15 @@ function EditDialog({ record, appUser, indicators, onClose, onSaved }) {
       pontuacao: novaPontuacao,
       observacao: form.observacao,
     };
-    const res = await base44.functions.invoke('productionManager', {
-      action: 'update',
-      recordId: record.id,
-      updateData,
-      appUserId: appUser?.id,
-    });
-    if (res.data?.error) {
-      toast.error('Erro ao salvar: ' + res.data.error);
+    // Chamada direta ao Firestore — a permissão de editar (48h/admin/liberação)
+    // já é verificada antes de mostrar o botão (ver podeEditar mais abaixo).
+    // Antes chamava base44.functions.invoke('productionManager', ...), uma
+    // função que não existe neste projeto (era da plataforma Base44 original,
+    // nunca migrada) — o erro não tratado travava o botão em "salvando" para sempre.
+    try {
+      await base44.entities.Production.update(record.id, updateData);
+    } catch (err) {
+      toast.error('Erro ao salvar: ' + (err?.message || ''));
       setSaving(false);
       return;
     }
@@ -456,13 +457,15 @@ export default function HistoricoLancamentos({ appUser, orgId, orgName, defaultO
   const handleDelete = async () => {
     if (!deleteDialog) return;
     setSaving(true);
-    const res = await base44.functions.invoke('productionManager', {
-      action: 'delete',
-      recordId: deleteDialog.id,
-      appUserId: appUser?.id,
-    });
-    if (res.data?.error) {
-      toast.error('Erro ao excluir: ' + res.data.error);
+    // Chamada direta ao Firestore — a permissão de excluir (48h/admin/liberação)
+    // já é verificada antes de mostrar o botão (ver podeEditar mais abaixo).
+    // Antes chamava base44.functions.invoke('productionManager', ...), uma
+    // função que não existe neste projeto (era da plataforma Base44 original,
+    // nunca migrada) — o erro não tratado travava o botão em "excluindo" para sempre.
+    try {
+      await base44.entities.Production.delete(deleteDialog.id);
+    } catch (err) {
+      toast.error('Erro ao excluir: ' + (err?.message || ''));
       setSaving(false);
       return;
     }
