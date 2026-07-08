@@ -289,7 +289,10 @@ export default function BackupRestore() {
 
       await Promise.all(Object.keys(allData).map(async (dbKey) => {
         try {
-          const existing = await base44.entities[dbKey].list('-created_date');
+          // listAll (sem limite) — .list() sozinho corta em 1000 registros,
+          // o que fazia a checagem de duplicidade ignorar registros mais
+          // antigos em tabelas grandes (ex.: Production) e recriá-los.
+          const existing = await base44.entities[dbKey].listAll('-created_date');
           existingByDb[dbKey] = existing || [];
           const incoming = allData[dbKey];
           for (const rec of incoming) {
