@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Download, Upload, Database, CheckCircle2, AlertTriangle, Loader2, FileSpreadsheet, RefreshCw, Info, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { getPeriodo } from '@/lib/utils';
 
 const DB_CONFIG = [
   { key: 'Production',       label: 'Produção',                  color: 'bg-green-100 text-green-800',   icon: '📊' },
@@ -340,11 +341,11 @@ export default function BackupRestore() {
             if (v === '') payload[k] = null;
           }
 
-          // Corrige periodo ausente em Production
-          if (dbKey === 'Production' && !payload.periodo && payload.data) {
-            const d = new Date(payload.data);
-            const trimestre = Math.ceil((d.getMonth() + 1) / 3);
-            payload.periodo = `${d.getFullYear()}-T${trimestre}`;
+          // Sempre recalcula o período em Production a partir da data — não dá
+          // para confiar no periodo trazido pelo arquivo (ex.: sistema legado
+          // Base44 ou uma exportação antiga podem trazer valor incorreto).
+          if (dbKey === 'Production' && payload.data) {
+            payload.periodo = getPeriodo(payload.data);
           }
 
           const dup = existing.find(ex => recordsEqual(ex, rec));

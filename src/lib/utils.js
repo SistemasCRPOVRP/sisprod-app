@@ -6,9 +6,21 @@ export function cn(...inputs) {
 }
 
 export function getPeriodo(date) {
-  const d = new Date(date);
-  const month = d.getMonth() + 1;
-  const year = d.getFullYear();
+  let year, month;
+  // Strings "YYYY-MM-DD" (formato usado no campo `data` do sistema) são
+  // extraídas diretamente do texto. "new Date('YYYY-MM-DD')" interpreta a
+  // string como meia-noite UTC — em fusos negativos (ex.: Brasília, UTC-3)
+  // isso cai no dia anterior, jogando o 1º dia de um trimestre (01/01, 01/04,
+  // 01/07, 01/10) para o trimestre errado.
+  const m = typeof date === 'string' && date.match(/^(\d{4})-(\d{2})/);
+  if (m) {
+    year = parseInt(m[1], 10);
+    month = parseInt(m[2], 10);
+  } else {
+    const d = new Date(date);
+    year = d.getFullYear();
+    month = d.getMonth() + 1;
+  }
   const trimestre = Math.ceil(month / 3);
   return `${year}-T${trimestre}`;
 }

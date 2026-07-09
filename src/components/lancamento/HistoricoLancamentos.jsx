@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getPeriodo } from '@/lib/utils';
 
 const catColors = {
   'Preventiva': 'bg-primary/10 text-primary',
@@ -149,6 +150,7 @@ function EditDialog({ record, appUser, indicators, onClose, onSaved, onRecordUpd
     const novaQtd = parseFloat(form.quantidade);
     const updateData = {
       data: form.data,
+      periodo: getPeriodo(form.data),
       indicator_id: form.indicator_id,
       indicator_name: selectedInd?.nome || record.indicator_name,
       categoria: selectedInd?.categoria || record.categoria,
