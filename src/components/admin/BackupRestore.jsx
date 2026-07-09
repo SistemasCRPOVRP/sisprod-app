@@ -102,6 +102,25 @@ function recordsEqual(a, b) {
   return true;
 }
 
+// Para algumas tabelas, o mesmo registro do mundo real (ex.: mesma pessoa)
+// pode ter campos levemente diferentes entre uma exportação e outra (unidade
+// atualizada, telefone corrigido, etc.). Comparar só por igualdade total de
+// conteúdo não detecta isso como duplicado e acaba criando uma 2ª conta para
+// a mesma pessoa. Por isso, para essas tabelas, casamos primeiro pela chave
+// natural (ex.: Id. Funcional) antes de cair na comparação por conteúdo.
+const CHAVE_NATURAL = {
+  AppUser: 'id_funcional',
+};
+
+function encontrarDuplicado(existing, rec, dbKey) {
+  const chave = CHAVE_NATURAL[dbKey];
+  if (chave && rec[chave]) {
+    const porChave = existing.find(ex => ex[chave] === rec[chave]);
+    if (porChave) return porChave;
+  }
+  return existing.find(ex => recordsEqual(ex, rec));
+}
+
 export default function BackupRestore() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState([]);
@@ -297,7 +316,7 @@ export default function BackupRestore() {
           existingByDb[dbKey] = existing || [];
           const incoming = allData[dbKey];
           for (const rec of incoming) {
-            const dup = existing.find(ex => recordsEqual(ex, rec));
+            const dup = encontrarDuplicado(existing, rec, dbKey);
             if (dup) dupList.push({ dbKey, existing: dup, incoming: rec });
           }
         } catch {}
@@ -348,7 +367,7 @@ export default function BackupRestore() {
             payload.periodo = getPeriodo(payload.data);
           }
 
-          const dup = existing.find(ex => recordsEqual(ex, rec));
+          const dup = encontrarDuplicado(existing, rec, dbKey);
           if (dup) {
             const choice = dupChoices.find(c => c.dbKey === dbKey && c.existingId === dup.id);
             if (!choice || choice.action === 'manter') { skipped++; continue; }
